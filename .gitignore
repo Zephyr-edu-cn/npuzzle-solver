@@ -1,0 +1,19 @@
+#Maven Complie Output
+target/
+
+# IDE
+out/
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# logs and results
+*.log
+*.csv
+
+# files like database
+*.dat
+scan_project.py
