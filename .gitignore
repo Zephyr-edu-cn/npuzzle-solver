@@ -9,6 +9,7 @@ out/
 .settings/
 .classpath
 .project
+dependency-reduced-pom.xml
 
 # logs and results
 *.log

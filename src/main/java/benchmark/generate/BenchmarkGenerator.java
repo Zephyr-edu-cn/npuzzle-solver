@@ -1,4 +1,4 @@
-package npuzzle.benchmark.generate;
+package benchmark.generate;
 
 import java.io.File;
 import java.io.PrintWriter;

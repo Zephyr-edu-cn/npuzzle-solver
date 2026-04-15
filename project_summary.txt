@@ -1,6 +1,7 @@
 === PROJECT DIRECTORY TREE ===
 .
 ├── .gitignore
+├── academic_results.csv
 ├── benchmark_results
 │   ├── academic_results.csv
 │   └── results.csv
@@ -13,98 +14,93 @@
 │   ├── pathfinding3.txt
 │   ├── problems.txt
 │   └── problems3.txt
+├── dependency-reduced-pom.xml
 ├── docs
 │   ├── Additive Pattern Database Heuristics.pdf
 │   └── Disjoint pattern database heuristics.pdf
 ├── pom.xml
 └── src
-    ├── main
-    │   ├── java
-    │   │   ├── META-INF
-    │   │   │   └── MANIFEST.MF
-    │   │   ├── algs4
-    │   │   │   └── util
-    │   │   │       ├── StdRandom.java
-    │   │   │       ├── Stopwatch.java
-    │   │   │       └── StopwatchCPU.java
-    │   │   ├── core
-    │   │   │   ├── problem
-    │   │   │   │   ├── Action.java
-    │   │   │   │   ├── Problem.java
-    │   │   │   │   ├── ProblemType.java
-    │   │   │   │   ├── SearchTreeRecorder.java
-    │   │   │   │   └── State.java
-    │   │   │   ├── runner
-    │   │   │   │   ├── EngineFeeder.java
-    │   │   │   │   └── SearchTester.java
-    │   │   │   └── solver
-    │   │   │       ├── algorithm
-    │   │   │       │   ├── heuristic
-    │   │   │       │   │   ├── HeuristicType.java
-    │   │   │       │   │   └── Predictor.java
-    │   │   │       │   └── searcher
-    │   │   │       │       ├── AbstractSearcher.java
-    │   │   │       │       └── BestFirstSearcher.java
-    │   │   │       └── queue
-    │   │   │           ├── EvaluationType.java
-    │   │   │           ├── Frontier.java
-    │   │   │           └── Node.java
-    │   │   ├── npuzzle
-    │   │   │   ├── heuristic
-    │   │   │   │   ├── EmptyDistancePredictor.java
-    │   │   │   │   ├── HammingPredictor.java
-    │   │   │   │   ├── LinearConflictPredictor.java
-    │   │   │   │   ├── ManhattanPredictor.java
-    │   │   │   │   └── MisplacedPredictor.java
-    │   │   │   ├── model
-    │   │   │   │   ├── NPuzzleProblem.java
-    │   │   │   │   ├── PDirection.java
-    │   │   │   │   ├── PuzzleAction.java
-    │   │   │   │   └── PuzzleBoard.java
-    │   │   │   ├── queue
-    │   │   │   │   └── PqFrontier.java
-    │   │   │   ├── runner
-    │   │   │   │   └── PuzzleFeeder.java
-    │   │   │   ├── solver
-    │   │   │   │   ├── IdAStar.java
-    │   │   │   │   └── database
-    │   │   │   │       ├── DisjointPatternDatabase.java
-    │   │   │   │       ├── PatternDatabase.java
-    │   │   │   │       ├── PatternDatabaseGenerator.java
-    │   │   │   │       └── util
-    │   │   │   │           └── DatabaseConsistencyChecker.java
-    │   │   │   └── tool
-    │   │   │       └── PuzzleGenerator.java
-    │   │   └── pathfinding
-    │   │       ├── problem
-    │   │       │   └── pathfinding
-    │   │       │       ├── Direction.java
-    │   │       │       ├── GridType.java
-    │   │       │       ├── Move.java
-    │   │       │       ├── PathFinding.java
-    │   │       │       └── Position.java
-    │   │       ├── queue
-    │   │       │   ├── ListFrontier.java
-    │   │       │   ├── PqFrontier.java
-    │   │       │   ├── QueueFrontier.java
-    │   │       │   └── StackFrontier.java
-    │   │       └── runner
-    │   │           └── WalkerFeeder.java
-    │   └── resources
-    │       ├── pattern_db_15_663_1.dat
-    │       ├── pattern_db_15_663_2.dat
-    │       └── pattern_db_15_663_3.dat
-    └── test
-        └── java
-            └── npuzzle
-                └── benchmark
-                    ├── AblationTester.java
-                    ├── AcademicBatchTester.java
-                    ├── PdbLookupBenchmark.java
-                    ├── StateRepresentationBenchmark.java
-                    └── generate
-                        ├── BenchmarkGenerator.java
-                        └── HardInstanceMiner.java
+    └── main
+        ├── java
+        │   ├── algs4
+        │   │   └── util
+        │   │       ├── StdRandom.java
+        │   │       ├── Stopwatch.java
+        │   │       └── StopwatchCPU.java
+        │   ├── benchmark
+        │   │   ├── AcademicBatchTester.java
+        │   │   ├── PdbLookupBenchmark.java
+        │   │   ├── StateRepresentationBenchmark.java
+        │   │   └── generate
+        │   │       ├── BenchmarkGenerator.java
+        │   │       └── HardInstanceMiner.java
+        │   ├── core
+        │   │   ├── problem
+        │   │   │   ├── Action.java
+        │   │   │   ├── Problem.java
+        │   │   │   ├── ProblemType.java
+        │   │   │   ├── SearchTreeRecorder.java
+        │   │   │   └── State.java
+        │   │   ├── runner
+        │   │   │   ├── EngineFeeder.java
+        │   │   │   └── SearchTester.java
+        │   │   └── solver
+        │   │       ├── algorithm
+        │   │       │   ├── heuristic
+        │   │       │   │   ├── HeuristicType.java
+        │   │       │   │   └── Predictor.java
+        │   │       │   └── searcher
+        │   │       │       ├── AbstractSearcher.java
+        │   │       │       └── BestFirstSearcher.java
+        │   │       └── queue
+        │   │           ├── EvaluationType.java
+        │   │           ├── Frontier.java
+        │   │           └── Node.java
+        │   ├── npuzzle
+        │   │   ├── heuristic
+        │   │   │   ├── EmptyDistancePredictor.java
+        │   │   │   ├── HammingPredictor.java
+        │   │   │   ├── LinearConflictPredictor.java
+        │   │   │   ├── ManhattanPredictor.java
+        │   │   │   └── MisplacedPredictor.java
+        │   │   ├── model
+        │   │   │   ├── NPuzzleProblem.java
+        │   │   │   ├── PDirection.java
+        │   │   │   ├── PuzzleAction.java
+        │   │   │   └── PuzzleBoard.java
+        │   │   ├── queue
+        │   │   │   └── PqFrontier.java
+        │   │   ├── runner
+        │   │   │   └── PuzzleFeeder.java
+        │   │   ├── solver
+        │   │   │   ├── IdAStar.java
+        │   │   │   └── database
+        │   │   │       ├── DisjointPatternDatabase.java
+        │   │   │       ├── PatternDatabase.java
+        │   │   │       ├── PatternDatabaseGenerator.java
+        │   │   │       └── util
+        │   │   │           └── DatabaseConsistencyChecker.java
+        │   │   └── tool
+        │   │       └── PuzzleGenerator.java
+        │   └── pathfinding
+        │       ├── problem
+        │       │   └── pathfinding
+        │       │       ├── Direction.java
+        │       │       ├── GridType.java
+        │       │       ├── Move.java
+        │       │       ├── PathFinding.java
+        │       │       └── Position.java
+        │       ├── queue
+        │       │   ├── ListFrontier.java
+        │       │   ├── PqFrontier.java
+        │       │   ├── QueueFrontier.java
+        │       │   └── StackFrontier.java
+        │       └── runner
+        │           └── WalkerFeeder.java
+        └── resources
+            ├── pattern_db_15_663_1.dat
+            ├── pattern_db_15_663_2.dat
+            └── pattern_db_15_663_3.dat
 
 
 === MAVEN POM.XML ===
@@ -141,5 +137,65 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-    
+
+
+    <build>
+        <plugins>
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <!-- 确保 JMH 注解处理器在编译时生效 -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.openjdk.jmh</groupId>
+                            <artifactId>jmh-generator-annprocess</artifactId>
+                            <version>1.36</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Shade Plugin (用于打包成包含所有依赖的 Uber JAR) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>benchmarks</finalName>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <!-- 指定 JMH 官方提供的启动类 -->
+                                    <mainClass>org.openjdk.jmh.Main</mainClass>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

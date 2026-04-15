@@ -7,7 +7,7 @@ import java.io.*;
 import java.util.Arrays;
 /**
  不相交模式数据库
- 结合了博客中的位运算技巧：一次遍历计算所有 PDB 索引
+ 一次遍历计算所有 PDB 索引
  */
 public class DisjointPatternDatabase implements Predictor {
     // 直接暴露原始 byte 数组以供极速访问
@@ -41,7 +41,7 @@ public class DisjointPatternDatabase implements Predictor {
         db.db2 = loadRawBytes("pattern_db_15_663_2.dat");
         db.db3 = loadRawBytes("pattern_db_15_663_3.dat");
 
-        System.out.println("成功加载 6-6-3 极速数据库 (Raw Bytes)");
+        System.out.println("[INFO] 6-6-3 Compact Pattern Database loaded successfully (Raw Bytes)");
         return db;
     }
 

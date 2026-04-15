@@ -1,4 +1,4 @@
-package npuzzle.benchmark.generate;
+package benchmark.generate;
 
 import core.problem.Problem;
 import core.runner.EngineFeeder;
