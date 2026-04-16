@@ -28,12 +28,9 @@
         │   │       ├── Stopwatch.java
         │   │       └── StopwatchCPU.java
         │   ├── benchmark
-        │   │   ├── AcademicBatchTester.java
         │   │   ├── PdbLookupBenchmark.java
-        │   │   ├── StateRepresentationBenchmark.java
-        │   │   └── generate
-        │   │       ├── BenchmarkGenerator.java
-        │   │       └── HardInstanceMiner.java
+        │   │   ├── SearchBenchmarkRunner.java
+        │   │   └── StateTransitionBenchmark.java
         │   ├── core
         │   │   ├── problem
         │   │   │   ├── Action.java

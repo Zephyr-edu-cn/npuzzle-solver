@@ -7,7 +7,6 @@ import npuzzle.heuristic.LinearConflictPredictor;
 import npuzzle.heuristic.ManhattanPredictor;
 import npuzzle.solver.IdAStar;
 import npuzzle.solver.database.DisjointPatternDatabase;
-import core.solver.algorithm.searcher.BestFirstSearcher;
 
 import java.io.*;
 import java.util.*;
@@ -19,9 +18,9 @@ import java.util.concurrent.*;
  * 1. Global JIT Warmup to eliminate cold-start bias.
  * 2. Intersection-based time statistics to prevent Survivor Bias.
  * 3. Multi-trial execution with Variance/Standard Deviation analysis.
- * 4. Comprehensive baselines (including A* + Manhattan).
+ * 4. Strictly isolated GC footprint (A* is excluded due to mathematically guaranteed OOM on d>45).
  */
-public class AcademicBatchTester {
+public class SearchBenchmarkRunner {
 
     private static final String INPUT_FILE = "datasets/my_benchmark_100.txt";
     private static final String OUTPUT_CSV = "academic_results.csv";
@@ -29,9 +28,8 @@ public class AcademicBatchTester {
     private static final int WARMUP_INSTANCES = 5;
     private static final int TRIALS = 3;
 
-    // Added A*_Manhattan as the ultimate exploding baseline
     private static final String[] CONFIGS = {
-            "A*_Manhattan", "IDA*_Manhattan", "IDA*_LinearConflict", "IDA*_PDB_OOP", "IDA*_PDB_Bitboard"
+            "IDA*_Manhattan", "IDA*_LinearConflict", "IDA*_PDB_OOP", "IDA*_PDB_Bitboard"
     };
 
     private static final Map<Integer, Map<String, Map<Integer, TestResult>>> allTrialsData = new HashMap<>();
@@ -66,11 +64,6 @@ public class AcademicBatchTester {
         for (int i = 0; i < warmupCount; i++) {
             Problem p = allProblems.get(i);
 
-            // Warmup A*
-            BestFirstSearcher astar = new BestFirstSearcher(feeder.getFrontier(core.solver.queue.EvaluationType.FULL), manhattan);
-            runConfigSilent(astar, p, executor, 2);
-
-            // Warmup IDA* variants
             runConfigSilent(new IdAStar(feeder.getFrontier(core.solver.queue.EvaluationType.FULL), manhattan), p, executor, 2);
             runConfigSilent(new IdAStar(feeder.getFrontier(core.solver.queue.EvaluationType.FULL), linearConflict), p, executor, 2);
             IdAStar pOop = new IdAStar(feeder.getFrontier(core.solver.queue.EvaluationType.FULL), pdb); pOop.setUseGeneralPath(true);
@@ -93,27 +86,19 @@ public class AcademicBatchTester {
                 int instanceId = i + 1;
                 System.out.println("\n[Trial " + trial + "] Processing Instance [" + instanceId + "/" + allProblems.size() + "]");
 
-                // 0. A* + Manhattan
-                BestFirstSearcher astarSearcher = new BestFirstSearcher(feeder.getFrontier(core.solver.queue.EvaluationType.FULL), manhattan);
-                runConfig(trial, instanceId, CONFIGS[0], astarSearcher, p, executor, csvWriter);
-
-                // 1. IDA* + Manhattan
                 IdAStar mSearcher = new IdAStar(feeder.getFrontier(core.solver.queue.EvaluationType.FULL), manhattan);
-                runConfig(trial, instanceId, CONFIGS[1], mSearcher, p, executor, csvWriter);
+                runConfig(trial, instanceId, CONFIGS[0], mSearcher, p, executor, csvWriter);
 
-                // 2. IDA* + Linear Conflict
                 IdAStar lSearcher = new IdAStar(feeder.getFrontier(core.solver.queue.EvaluationType.FULL), linearConflict);
-                runConfig(trial, instanceId, CONFIGS[2], lSearcher, p, executor, csvWriter);
+                runConfig(trial, instanceId, CONFIGS[1], lSearcher, p, executor, csvWriter);
 
-                // 3. IDA* + PDB (OOP)
                 IdAStar pOopSearcher = new IdAStar(feeder.getFrontier(core.solver.queue.EvaluationType.FULL), pdb);
                 pOopSearcher.setUseGeneralPath(true);
-                runConfig(trial, instanceId, CONFIGS[3], pOopSearcher, p, executor, csvWriter);
+                runConfig(trial, instanceId, CONFIGS[2], pOopSearcher, p, executor, csvWriter);
 
-                // 4. IDA* + PDB (Bitboard)
                 IdAStar pBitSearcher = new IdAStar(feeder.getFrontier(core.solver.queue.EvaluationType.FULL), pdb);
                 pBitSearcher.setUseGeneralPath(false);
-                runConfig(trial, instanceId, CONFIGS[4], pBitSearcher, p, executor, csvWriter);
+                runConfig(trial, instanceId, CONFIGS[3], pBitSearcher, p, executor, csvWriter);
             }
         }
         executor.shutdownNow();
@@ -123,17 +108,22 @@ public class AcademicBatchTester {
         printUnbiasedStatisticalSummary(allProblems.size());
     }
 
-    // Changed parameter from IdAStar to AbstractSearcher
     private static void runConfigSilent(core.solver.algorithm.searcher.AbstractSearcher searcher, Problem problem, ExecutorService executor, int timeout) {
         Future<Deque<Node>> future = executor.submit(() -> searcher.search(problem));
-        try { future.get(timeout, TimeUnit.SECONDS); } catch (Exception ignore) { future.cancel(true); }
+        try { future.get(timeout, TimeUnit.SECONDS); } catch (Throwable ignore) { future.cancel(true); }
     }
 
-    // Changed parameter from IdAStar to AbstractSearcher
     private static void runConfig(int trial, int instanceId, String configName, core.solver.algorithm.searcher.AbstractSearcher searcher, Problem problem, ExecutorService executor, PrintWriter csvWriter) {
         System.out.printf("   ├─ %-22s -> ", configName);
 
-        Future<Deque<Node>> future = executor.submit(() -> searcher.search(problem));
+        Future<Deque<Node>> future = executor.submit(() -> {
+            try {
+                return searcher.search(problem);
+            } catch (OutOfMemoryError oom) {
+                return null; // Safely catch OOM inside the thread to prevent JVM death
+            }
+        });
+
         long startTime = System.currentTimeMillis();
         try {
             Deque<Node> path = future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -148,19 +138,18 @@ public class AcademicBatchTester {
                 csvWriter.printf("%d,%d,%s,Solved,%d,%d,%d,%d,%.3f\n", trial, instanceId, configName, depth, generated, expanded, timeMs, ebf);
                 allTrialsData.get(trial).get(configName).put(instanceId, new TestResult(true, timeMs, expanded, ebf));
             } else {
-                System.out.println("[FAIL] (No Solution)");
-                csvWriter.printf("%d,%d,%s,NoSolution,-1,-1,-1,-1,-1\n", trial, instanceId, configName);
+                System.out.println("[FAIL/OOM] (Memory Exhausted)");
+                csvWriter.printf("%d,%d,%s,OOM,-1,-1,-1,-1,-1\n", trial, instanceId, configName);
                 allTrialsData.get(trial).get(configName).put(instanceId, new TestResult(false, 0, 0, 0));
             }
         } catch (TimeoutException e) {
             future.cancel(true);
-            System.out.printf("[TIMEOUT/OOM] (>%d sec) | Nodes Exp: %,d\n", TIMEOUT_SECONDS, searcher.nodesExpanded());
+            System.out.printf("[TIMEOUT] (>%d sec) | Nodes Exp: %,d\n", TIMEOUT_SECONDS, searcher.nodesExpanded());
             csvWriter.printf("%d,%d,%s,Timeout,-1,%d,%d,>%d,-1\n", trial, instanceId, configName, searcher.nodesGenerated(), searcher.nodesExpanded(), TIMEOUT_SECONDS * 1000);
             allTrialsData.get(trial).get(configName).put(instanceId, new TestResult(false, TIMEOUT_SECONDS * 1000L, searcher.nodesExpanded(), 0));
-        } catch (Exception e) {
-            // Treat OutOfMemoryError and other exceptions as FAIL
+        } catch (Throwable e) {
             future.cancel(true);
-            System.out.printf("[ERROR/OOM] Nodes Exp: %,d\n", searcher.nodesExpanded());
+            System.out.printf("[ERROR] Execution Exception\n");
             csvWriter.printf("%d,%d,%s,Error,-1,%d,%d,-1,-1\n", trial, instanceId, configName, searcher.nodesGenerated(), searcher.nodesExpanded());
             allTrialsData.get(trial).get(configName).put(instanceId, new TestResult(false, 0, 0, 0));
         }

@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 @Fork(1)
-public class StateRepresentationBenchmark {
+public class StateTransitionBenchmark {
 
     private static final int POOL_SIZE = 1024;
     private static final int MASK = POOL_SIZE - 1;
