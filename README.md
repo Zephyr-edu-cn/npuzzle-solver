@@ -49,6 +49,16 @@ To ensure the empirical validity of the performance measurements, the evaluation
   - `HashMap<Long, Byte>`: `184 ns/op`
   - 1D `byte[]` Array: `77 ns/op` **(2.38x Speedup)**
 
+### Benchmark Methodology Note
+
+Initial microbenchmark results indicated an apparent ~11x speedup for the bitboard implementation. However, this was later identified as a benchmarking artifact caused by JVM JIT optimizations (notably constant folding and dead code elimination), which partially removed the baseline workload.
+
+To ensure accurate measurement, the benchmark was redesigned using a randomized state pool with runtime-dependent indexing (`index & MASK`). This prevents the JIT compiler from over-optimizing the execution path and forces full evaluation of the state transition logic.
+
+Under these corrected conditions, the measured speedup stabilizes at ~5x, which more accurately reflects the true computational advantage of bitwise state representation over heap-based array operations.
+
+This aligns with known challenges in microbenchmarking, where improperly designed tests may unintentionally measure optimized-away code instead of real execution cost.
+
 ---
 
 ## Build & Reproducibility
