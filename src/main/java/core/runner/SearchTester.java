@@ -400,8 +400,8 @@ public final class SearchTester {
             System.out.println("初始状态:");
             problem.root().getState().draw();
             System.out.println("目标状态:");
-            if (problem instanceof NPuzzleProblem) {
-                ((NPuzzleProblem) problem).getGoal().draw();
+            if (problem.getGoal() != null) {
+                problem.getGoal().draw();
             }
 
             // 使用选择的搜索算法求解问题
@@ -593,9 +593,9 @@ public final class SearchTester {
                     parentId = nodeIds.getOrDefault(node.getParent(), 0);
                 }
 
-                int g = 1;  // 默认为1
-                int h = 1;  // 默认为1
-                int f = 1;  // 默认为1
+                int g = node.getPathCost();
+                int h = node.getHeuristic();
+                int f = g + h;
                 String stateStr = stateToString(board);
 
                 writer.println(size + " " + parentId + " " + g + " " + h + " " + f + " " + stateStr);

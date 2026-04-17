@@ -69,5 +69,19 @@ public class PuzzleBoard extends State {
     }
 
     @Override
-    public void draw() { /* implementation */ }
+    public void draw() {
+        System.out.println("-------------");
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                int tile = tiles[i * size + j];
+                if (tile == 0) {
+                    System.out.print("   ");
+                } else {
+                    System.out.printf("%2d ", tile);
+                }
+            }
+            System.out.println();
+        }
+        System.out.println("-------------");
+    }
 }

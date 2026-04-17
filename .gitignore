@@ -15,6 +15,5 @@ dependency-reduced-pom.xml
 *.log
 *.csv
 
-# files like database
-*.dat
+# files
 scan_project.py

@@ -105,6 +105,8 @@ This pipeline enables:
 
 ### Execution Guide
 
+The `6-6-3 Disjoint Pattern Database (.dat)` files are already included in `src/main/resources/` for immediate out-of-the-box reproducibility.
+
 1. **Compile the project and build the JMH Uber-JAR:**
    ```bash
    mvn clean package
