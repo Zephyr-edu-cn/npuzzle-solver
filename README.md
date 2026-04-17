@@ -73,6 +73,30 @@ Under these corrected conditions, the measured speedup stabilizes at ~5.08x, whi
 
 ---
 
+## Search Visualization Pipeline (Java + C++)
+
+To complement quantitative benchmarking, this project includes a cross-language visualization pipeline for qualitative analysis of search behavior.
+
+- **Backend (Java)**:
+  - The IDA* solver serializes DFS search trajectories into a compact state sequence format.
+  - Custom encoding avoids object overhead and enables efficient streaming of large search traces.
+
+- **Frontend (C++ / SFML)**:
+  - Visualization engine: https://github.com/BroMikey/Npuzzle-Visulization
+  - Parses serialized sequences via a custom protocol and reconstructs the search process for rendering.
+  - Hardware-accelerated rendering enables smooth playback of large search traces.
+
+This pipeline enables:
+- Inspection of search trajectories and solution paths
+- Visualization of heuristic guidance behavior
+- Debugging and validation of search correctness
+
+<p align="center">
+  <img src="./assets/visualization.gif" width="50%"/>
+</p>
+
+---
+
 ## Build & Reproducibility
 
 ### Prerequisites
