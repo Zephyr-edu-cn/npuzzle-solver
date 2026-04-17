@@ -6,6 +6,8 @@
 
 A high-performance heuristic search engine for the 15-Puzzle problem. This project investigates performance optimizations across two dimensions: **algorithmic state-space pruning** and **system-level memory management**. All implementations are evaluated under standardized benchmarking methodologies to ensure statistically unbiased comparisons.
 
+This project demonstrates that performance gains in combinatorial search problems stem from a combination of **search space reduction (algorithm design)** and **constant-factor optimization (system implementation)**.
+
 ## Key Optimizations
 
 ### 1. Algorithmic Optimizations: State Space Pruning
@@ -25,7 +27,7 @@ A high-performance heuristic search engine for the 15-Puzzle problem. This proje
 To ensure the empirical validity of the performance measurements, the evaluation framework implements the following methodological safeguards:
 1. **Global JIT Warmup**: Pre-executing all configurations to trigger JVM C2 compilation prior to measurement.
 2. **Survivor Bias Prevention**: Time statistics (Mean Time and StdDev) are calculated *strictly on the intersection set* of instances solved by all configurations within the timeout limit.
-3. **Cache-Thrashing Micro-benchmarks**: JMH benchmarks utilize a 1024-state Random Walk pool to prevent CPU branch predictor and L1 cache over-optimization.
+3. **State Pool Randomization**: JMH benchmarks utilize a 1024-state Random Walk pool to prevent CPU branch predictor and L1 cache over-optimization.
 
 ### Macro-Level: Search Performance (100 Instances)
 *Aggregated over 3 trials with a 60-second strict timeout per instance.*
@@ -37,7 +39,15 @@ To ensure the empirical validity of the performance measurements, the evaluation
 | **IDA* + PDB (OOP)** | 100.00% | 256.7 | ±526.7 | 592,956 | 1.233 |
 | **IDA* + PDB (Bitboard)** | 100.00% | **47.9** | **±97.6** | **592,956** | **1.233** |
 
-> *Observation: While the PDB algorithmic optimization yields identical expanded node counts (592K), the Bitboard system optimization further reduces the physical execution time by **~5.3x** (from 256.7ms to 47.9ms) by minimizing memory allocation overhead.*
+> **Key Insight:**  
+> Algorithmic improvements (PDB) reduce the search space (~30x fewer nodes), while system-level optimizations (Bitboard) further reduce physical execution time (~5.3x speedup, from 256.7ms to 47.9ms) by minimizing memory allocation overhead, without changing the search tree structure.
+
+*(Visualization of the Ablation Study, EBF, and State Space)*
+<p align="center">
+  <img src="./assets/ablation_time.png" width="32.4%"/>
+  <img src="./assets/ebf.png" width="32%"/>
+  <img src="./assets/state_space.png" width="28.7%"/>
+</p>
 
 ### Micro-Level: Throughput (JMH Micro-benchmarks)
 *Measured via Java Microbenchmark Harness (JMH) on fundamental operations.*
@@ -49,15 +59,17 @@ To ensure the empirical validity of the performance measurements, the evaluation
   - `HashMap<Long, Byte>`: `184 ns/op`
   - 1D `byte[]` Array: `77 ns/op` **(2.38x Speedup)**
 
-### Benchmark Methodology Note
+<p align="center">
+  <img src="./assets/bitboard_throughput.png" width="50%"/>
+</p>
 
-Initial microbenchmark results indicated an apparent ~11x speedup for the bitboard implementation. However, this was later identified as a benchmarking artifact caused by JVM JIT optimizations (notably constant folding and dead code elimination), which partially removed the baseline workload.
+#### Benchmark Methodology Note (Self-Correction)
 
-To ensure accurate measurement, the benchmark was redesigned using a randomized state pool with runtime-dependent indexing (`index & MASK`). This prevents the JIT compiler from over-optimizing the execution path and forces full evaluation of the state transition logic.
+An initial ~11x speedup was later identified as a benchmarking artifact caused by JVM JIT optimizations (e.g., constant folding and dead code elimination), which partially removed the baseline workload.
 
-Under these corrected conditions, the measured speedup stabilizes at ~5x, which more accurately reflects the true computational advantage of bitwise state representation over heap-based array operations.
+To correct this, the benchmark was redesigned using randomized state inputs with runtime-dependent indexing. This prevents over-optimization and ensures full execution of the state transition logic.
 
-This aligns with known challenges in microbenchmarking, where improperly designed tests may unintentionally measure optimized-away code instead of real execution cost.
+Under these corrected conditions, the measured speedup stabilizes at ~5.08x, which more accurately reflects real-world performance.
 
 ---
 
@@ -85,3 +97,7 @@ This aligns with known challenges in microbenchmarking, where improperly designe
    java -cp target/benchmarks.jar benchmark.SearchBenchmarkRunner
    ```
    *(Note for Unix/Linux/Mac users: Replace the semicolon `;` with a colon `:` in the classpath.)*
+
+---
+## Conclusion
+This project demonstrates that combining heuristic design (to reduce search space) with hardware-aware implementation (to reduce constant factors) leads to multiplicative performance gains in combinatorial search problems.
