@@ -1,6 +1,5 @@
 package core.runner;
 
-import algs4.util.StopwatchCPU;
 import core.problem.Problem;
 import core.problem.ProblemType;
 import core.problem.SearchTreeRecorder;
@@ -12,6 +11,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
+import core.util.Stopwatch;
 import npuzzle.heuristic.ManhattanPredictor;
 import npuzzle.model.PuzzleAction;
 import npuzzle.solver.IdAStar;
@@ -181,7 +181,7 @@ public final class SearchTester {
 
             // 使用搜索算法求解问题
             SearchTreeRecorder.start();
-            StopwatchCPU timer1 = new StopwatchCPU();
+            Stopwatch timer1 = new Stopwatch();
             Deque<Node> path = searcher.search(problem);
             List<Node> recordedNodes = SearchTreeRecorder.stopAndGetSnapshot();
             double time1 = timer1.elapsedTime();
@@ -237,7 +237,7 @@ public final class SearchTester {
 
             // 使用IdAStar搜索算法求解问题
             SearchTreeRecorder.start();
-            StopwatchCPU timer = new StopwatchCPU();
+            Stopwatch timer = new Stopwatch();
             Deque<core.solver.queue.Node> path = searcher.search(problem);
             List<Node> recordedNodes = SearchTreeRecorder.stopAndGetSnapshot();
             double time = timer.elapsedTime();
@@ -406,7 +406,7 @@ public final class SearchTester {
 
             // 使用选择的搜索算法求解问题
             SearchTreeRecorder.start();
-            StopwatchCPU timer = new StopwatchCPU();
+            Stopwatch timer = new Stopwatch();
             Deque<core.solver.queue.Node> path = searcher.search(problem);
             List<Node> recordedNodes = SearchTreeRecorder.stopAndGetSnapshot();
             double time = timer.elapsedTime();
