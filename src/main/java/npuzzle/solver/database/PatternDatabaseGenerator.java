@@ -6,7 +6,7 @@ import java.util.Arrays;
 /**
  * Generator for the 15-Puzzle Disjoint Pattern Database (PDB).
  *
- * Uses a reverse 0-1 Breadth-First Search (BFS) combined with 64-bit state compression.
+ * Uses a reverse Breadth-First Search (BFS) combined with 64-bit state compression.
  * Computes exact heuristic costs from the goal state backwards to all reachable configurations
  * of a specific tile subset. Memory allocations are strictly minimized to handle
  * hundreds of millions of states efficiently.
@@ -39,10 +39,10 @@ public class PatternDatabaseGenerator {
     }
 
     /**
-     * Executes the 0-1 BFS to generate the pattern database.
+     * Executes the BFS to generate the pattern database.
      */
     public void generate() {
-        System.out.println("\n=== Starting PDB Generation (0-1 BFS) ===");
+        System.out.println("\n=== Starting PDB Generation (BFS) ===");
         System.out.println("Target Subset: " + Arrays.toString(subsetTiles));
         long startTime = System.currentTimeMillis();
 
@@ -83,7 +83,7 @@ public class PatternDatabaseGenerator {
         int currentCost = 0;
         int stateCount = 0;
 
-        // 2. Core 0-1 BFS Loop
+        // 2. Core BFS Loop
         while (!currentQueue.isEmpty() || !nextQueue.isEmpty()) {
             if (currentQueue.isEmpty()) {
                 // Swap queues when the current cost level is exhausted
