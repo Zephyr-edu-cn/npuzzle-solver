@@ -4,7 +4,7 @@
 ![Build](https://img.shields.io/badge/Build-passing-brightgreen.svg)
 ![Benchmark](https://img.shields.io/badge/Benchmark-JMH-orange.svg)
 
-A high-performance heuristic search engine for the 15-Puzzle problem. This project investigates performance optimizations across two dimensions: **algorithmic state-space pruning** and **system-level memory management**. All implementations are evaluated under standardized benchmarking methodologies to ensure statistically unbiased comparisons.
+A high-performance heuristic search engine for the 15-Puzzle problem. This project investigates performance optimizations across two dimensions: **algorithmic state-space pruning** and **system-level memory management**. All implementations are evaluated under standardized benchmarking methodologies to reduce benchmarking bias and improve empirical reliability.
 
 This project demonstrates that performance gains in combinatorial search problems stem from a combination of **search space reduction (algorithm design)** and **constant-factor optimization (system implementation)**.
 
@@ -12,12 +12,12 @@ This project demonstrates that performance gains in combinatorial search problem
 
 ### 1. Algorithmic Optimizations: State Space Pruning
 - **Heuristic Comparison**: Implemented Manhattan Distance, Linear Conflict, and Disjoint Pattern Databases (PDB).
-- **6-6-3 Pattern Database**: Constructed a statically pre-computed 6-6-3 PDB using a reverse 0-1 Breadth-First Search (BFS) to compute exact minimal costs.
+- **6-6-3 Pattern Database**: Constructed a statically pre-computed 6-6-3 PDB using a reverse Breadth-First Search (BFS) to compute exact minimal costs.
 - **EBF Reduction**: The PDB heuristic reduces the Effective Branching Factor (EBF) from `1.341` (Manhattan) to `1.233`, decreasing the average number of expanded nodes by approximately **30x** on hard instances.
 
 ### 2. System-Level Optimizations: Hardware-Sympathetic Engineering
 - **64-bit Bitboard Compression**: Encoded the 4x4 board state into a single 64-bit `long` primitive. 
-- **Zero-Allocation State Transitions**: Redesigned the IDA* search loop to execute state transitions via bitwise operations (masks and shifts). This eliminates object instantiation (`new int[]` or `new Node()`), resulting in zero Young Generation Garbage Collection (GC) overhead during deep DFS traversals.
+- **Zero-Allocation State Transitions**: Redesigned the IDA* search loop to execute state transitions via bitwise operations (masks and shifts). This eliminates object instantiation (`new int[]` or `new Node()`), eliminating hot-path object allocation and, in profiled runs, avoiding Young Generation GC during deep DFS traversals.
 - **Cache Locality**: Flattened the high-dimensional PDB into a 1D `byte[]` array, avoiding the autoboxing and hashing overhead of `HashMap<Long, Byte>` to improve CPU L1/L2 cache hit rates.
 
 ---
@@ -26,8 +26,8 @@ This project demonstrates that performance gains in combinatorial search problem
 
 To ensure the empirical validity of the performance measurements, the evaluation framework implements the following methodological safeguards:
 1. **Global JIT Warmup**: Pre-executing all configurations to trigger JVM C2 compilation prior to measurement.
-2. **Survivor Bias Prevention**: Time statistics (Mean Time and StdDev) are calculated *strictly on the intersection set* of instances solved by all configurations within the timeout limit.
-3. **State Pool Randomization**: JMH benchmarks utilize a 1024-state Random Walk pool to prevent CPU branch predictor and L1 cache over-optimization.
+2. **Common Solved-Set Evaluation**: Time statistics (Mean Time and StdDev) are calculated *strictly on the intersection set* of instances solved by all configurations within the timeout limit.
+3. **State Pool Randomization**: JMH benchmarks utilize a 1024-state Random Walk pool to reduce constant folding, dead-code elimination, and cache-locality artifacts.
 
 ### Macro-Level: Search Performance (100 Instances)
 *Aggregated over 3 trials with a 60-second strict timeout per instance.*
@@ -70,6 +70,15 @@ An initial ~11x speedup was later identified as a benchmarking artifact caused b
 To correct this, the benchmark was redesigned using randomized state inputs with runtime-dependent indexing. This prevents over-optimization and ensures full execution of the state transition logic.
 
 Under these corrected conditions, the measured speedup stabilizes at ~5.08x, which more accurately reflects real-world performance.
+
+---
+
+Detailed reports:
+
+- [Benchmark Report](docs/benchmark.md)
+- [Correctness Validation](docs/correctness.md)
+- [6-6-3 PDB Design](docs/pdb_design.md)
+- [Visualization Protocol](docs/visualization_protocol.md)
 
 ---
 
@@ -124,6 +133,19 @@ The `6-6-3 Disjoint Pattern Database (.dat)` files are already included in `src/
    ```
    *(Note for Unix/Linux/Mac users: Replace the semicolon `;` with a colon `:` in the classpath.)*
 
+### Replay exported solution
+
+After running the Java solver, validate the exported solution path:
+
+```bash
+python scripts/replay_solution.py --problem bin/problem.txt --actions bin/solutionAnimation.txt --write-trace examples/latest_validated_trace.txt
+```
+
+Expected output:
+
+```text
+PASS: 52 actions replayed; final board matches the goal state.
+```
 ---
 ## Conclusion
 This project demonstrates that combining heuristic design (to reduce search space) with hardware-aware implementation (to reduce constant factors) leads to multiplicative performance gains in combinatorial search problems.

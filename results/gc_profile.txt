@@ -1,0 +1,306 @@
+(base) PS C:\Users\DELL\Desktop\finl\npuzzle-solver> & "C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe" -jar target/benchmarks.jar PdbLookupBenchmark -prof gc
+# JMH version: 1.36
+# VM version: JDK 19.0.2, OpenJDK 64-Bit Server VM, 19.0.2+7-FR
+# VM invoker: C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe
+# VM options: <none>
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: benchmark.PdbLookupBenchmark.test1DRawByteArray
+
+# Run progress: 0.00% complete, ETA 00:00:32
+# Fork: 1 of 1
+# Warmup Iteration   1: [INFO] 6-6-3 Compact Pattern Database loaded successfully (Raw Bytes)
+20.000 ops/us
+# Warmup Iteration   2: 22.668 ops/us
+# Warmup Iteration   3: 21.378 ops/us
+Iteration   1: 21.422 ops/us
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+Iteration   2: 20.653 ops/us
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+Iteration   3: 20.184 ops/us
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+Iteration   4: 22.499 ops/us
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+Iteration   5: 21.913 ops/us
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+
+
+Result "benchmark.PdbLookupBenchmark.test1DRawByteArray":
+  21.334 ±(99.9%) 3.596 ops/us [Average]
+  (min, avg, max) = (20.184, 21.334, 22.499), stdev = 0.934
+  CI (99.9%): [17.739, 24.930] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.test1DRawByteArray:·gc.alloc.rate":
+  ≈ 10?? MB/sec
+
+Secondary result "benchmark.PdbLookupBenchmark.test1DRawByteArray:·gc.alloc.rate.norm":
+  ≈ 10?? B/op
+
+Secondary result "benchmark.PdbLookupBenchmark.test1DRawByteArray:·gc.count":
+  ≈ 0 counts
+
+
+# JMH version: 1.36
+# VM version: JDK 19.0.2, OpenJDK 64-Bit Server VM, 19.0.2+7-FR
+# VM invoker: C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe
+# VM options: <none>
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: benchmark.PdbLookupBenchmark.testTraditionalHashMap
+
+# Run progress: 25.00% complete, ETA 00:00:25
+# Fork: 1 of 1
+# Warmup Iteration   1: [INFO] 6-6-3 Compact Pattern Database loaded successfully (Raw Bytes)
+14.388 ops/us
+# Warmup Iteration   2: 15.517 ops/us
+# Warmup Iteration   3: 15.813 ops/us
+Iteration   1: 15.290 ops/us
+                 ·gc.alloc.rate:      1043.883 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           4.000 counts
+                 ·gc.time:            4.000 ms
+
+Iteration   2: 15.030 ops/us
+                 ·gc.alloc.rate:      1026.096 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           5.000 counts
+                 ·gc.time:            7.000 ms
+
+Iteration   3: 15.770 ops/us
+                 ·gc.alloc.rate:      1076.571 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           5.000 counts
+                 ·gc.time:            5.000 ms
+
+Iteration   4: 15.964 ops/us
+                 ·gc.alloc.rate:      1089.840 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           5.000 counts
+                 ·gc.time:            6.000 ms
+
+Iteration   5: 15.635 ops/us
+                 ·gc.alloc.rate:      1067.464 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           5.000 counts
+                 ·gc.time:            4.000 ms
+
+
+
+Result "benchmark.PdbLookupBenchmark.testTraditionalHashMap":
+  15.538 ±(99.9%) 1.446 ops/us [Average]
+  (min, avg, max) = (15.030, 15.538, 15.964), stdev = 0.375
+  CI (99.9%): [14.092, 16.984] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.testTraditionalHashMap:·gc.alloc.rate":
+  1060.771 ±(99.9%) 98.681 MB/sec [Average]
+  (min, avg, max) = (1026.096, 1060.771, 1089.840), stdev = 25.627
+  CI (99.9%): [962.090, 1159.452] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.testTraditionalHashMap:·gc.alloc.rate.norm":
+  71.602 ±(99.9%) 0.001 B/op [Average]
+  (min, avg, max) = (71.602, 71.602, 71.602), stdev = 0.001
+  CI (99.9%): [71.602, 71.602] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.testTraditionalHashMap:·gc.count":
+  24.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (4.000, 4.800, 5.000), stdev = 0.447
+  CI (99.9%): [24.000, 24.000] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.testTraditionalHashMap:·gc.time":
+  26.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (4.000, 5.200, 7.000), stdev = 1.304
+  CI (99.9%): [26.000, 26.000] (assumes normal distribution)
+
+
+# JMH version: 1.36
+# VM version: JDK 19.0.2, OpenJDK 64-Bit Server VM, 19.0.2+7-FR
+# VM invoker: C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe
+# VM options: <none>
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: benchmark.PdbLookupBenchmark.test1DRawByteArray
+
+# Run progress: 50.00% complete, ETA 00:00:17
+# Fork: 1 of 1
+# Warmup Iteration   1: [INFO] 6-6-3 Compact Pattern Database loaded successfully (Raw Bytes)
+0.051 us/op
+# Warmup Iteration   2: 0.043 us/op
+# Warmup Iteration   3: 0.044 us/op
+Iteration   1: 0.047 us/op
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+Iteration   2: 0.043 us/op
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+Iteration   3: 0.049 us/op
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+Iteration   4: 0.046 us/op
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+Iteration   5: 0.046 us/op
+                 ·gc.alloc.rate:      ≈ 10?? MB/sec
+                 ·gc.alloc.rate.norm: ≈ 10?? B/op
+                 ·gc.count:           ≈ 0 counts
+
+
+
+Result "benchmark.PdbLookupBenchmark.test1DRawByteArray":
+  0.046 ±(99.9%) 0.009 us/op [Average]
+  (min, avg, max) = (0.043, 0.046, 0.049), stdev = 0.002
+  CI (99.9%): [0.038, 0.055] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.test1DRawByteArray:·gc.alloc.rate":
+  ≈ 10?? MB/sec
+
+Secondary result "benchmark.PdbLookupBenchmark.test1DRawByteArray:·gc.alloc.rate.norm":
+  ≈ 10?? B/op
+
+Secondary result "benchmark.PdbLookupBenchmark.test1DRawByteArray:·gc.count":
+  ≈ 0 counts
+
+
+# JMH version: 1.36
+# VM version: JDK 19.0.2, OpenJDK 64-Bit Server VM, 19.0.2+7-FR
+# VM invoker: C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe
+# VM options: <none>
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: benchmark.PdbLookupBenchmark.testTraditionalHashMap
+
+# Run progress: 75.00% complete, ETA 00:00:08
+# Fork: 1 of 1
+# Warmup Iteration   1: [INFO] 6-6-3 Compact Pattern Database loaded successfully (Raw Bytes)
+0.085 us/op
+# Warmup Iteration   2: 0.066 us/op
+# Warmup Iteration   3: 0.062 us/op
+Iteration   1: 0.066 us/op
+                 ·gc.alloc.rate:      1041.657 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           5.000 counts
+                 ·gc.time:            5.000 ms
+
+Iteration   2: 0.062 us/op
+                 ·gc.alloc.rate:      1094.267 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           5.000 counts
+                 ·gc.time:            5.000 ms
+
+Iteration   3: 0.063 us/op
+                 ·gc.alloc.rate:      1078.246 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           5.000 counts
+                 ·gc.time:            6.000 ms
+
+Iteration   4: 0.069 us/op
+                 ·gc.alloc.rate:      989.565 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           5.000 counts
+                 ·gc.time:            5.000 ms
+
+Iteration   5: 0.066 us/op
+                 ·gc.alloc.rate:      1029.459 MB/sec
+                 ·gc.alloc.rate.norm: 71.602 B/op
+                 ·gc.count:           4.000 counts
+                 ·gc.time:            3.000 ms
+
+
+
+Result "benchmark.PdbLookupBenchmark.testTraditionalHashMap":
+  0.065 ±(99.9%) 0.010 us/op [Average]
+  (min, avg, max) = (0.062, 0.065, 0.069), stdev = 0.003
+  CI (99.9%): [0.055, 0.075] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.testTraditionalHashMap:·gc.alloc.rate":
+  1046.639 ±(99.9%) 159.289 MB/sec [Average]
+  (min, avg, max) = (989.565, 1046.639, 1094.267), stdev = 41.367
+  CI (99.9%): [887.350, 1205.928] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.testTraditionalHashMap:·gc.alloc.rate.norm":
+  71.602 ±(99.9%) 0.001 B/op [Average]
+  (min, avg, max) = (71.602, 71.602, 71.602), stdev = 0.001
+  CI (99.9%): [71.602, 71.602] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.testTraditionalHashMap:·gc.count":
+  24.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (4.000, 4.800, 5.000), stdev = 0.447
+  CI (99.9%): [24.000, 24.000] (assumes normal distribution)
+
+Secondary result "benchmark.PdbLookupBenchmark.testTraditionalHashMap:·gc.time":
+  24.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (3.000, 4.800, 6.000), stdev = 1.095
+  CI (99.9%): [24.000, 24.000] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:00:34
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+NOTE: Current JVM experimentally supports Compiler Blackholes, and they are in use. Please exercise
+extra caution when trusting the results, look into the generated code to check the benchmark still
+works, and factor in a small probability of new VM bugs. Additionally, while comparisons between
+different JVMs are already problematic, the performance difference caused by different Blackhole
+modes can be very significant. Please make sure you use the consistent Blackhole mode for comparisons.
+
+Benchmark                                                       Mode  Cnt     Score     Error   Units
+PdbLookupBenchmark.test1DRawByteArray                          thrpt    5    21.334 ±   3.596  ops/us
+PdbLookupBenchmark.test1DRawByteArray:·gc.alloc.rate           thrpt    5    ≈ 10??            MB/sec
+PdbLookupBenchmark.test1DRawByteArray:·gc.alloc.rate.norm      thrpt    5    ≈ 10??              B/op
+PdbLookupBenchmark.test1DRawByteArray:·gc.count                thrpt    5       ≈ 0            counts
+PdbLookupBenchmark.testTraditionalHashMap                      thrpt    5    15.538 ±   1.446  ops/us
+PdbLookupBenchmark.testTraditionalHashMap:·gc.alloc.rate       thrpt    5  1060.771 ±  98.681  MB/sec
+PdbLookupBenchmark.testTraditionalHashMap:·gc.alloc.rate.norm  thrpt    5    71.602 ±   0.001    B/op
+PdbLookupBenchmark.testTraditionalHashMap:·gc.count            thrpt    5    24.000            counts
+PdbLookupBenchmark.testTraditionalHashMap:·gc.time             thrpt    5    26.000                ms
+PdbLookupBenchmark.test1DRawByteArray                           avgt    5     0.046 ±   0.009   us/op
+PdbLookupBenchmark.test1DRawByteArray:·gc.alloc.rate            avgt    5    ≈ 10??            MB/sec
+PdbLookupBenchmark.test1DRawByteArray:·gc.alloc.rate.norm       avgt    5    ≈ 10??              B/op
+PdbLookupBenchmark.test1DRawByteArray:·gc.count                 avgt    5       ≈ 0            counts
+PdbLookupBenchmark.testTraditionalHashMap                       avgt    5     0.065 ±   0.010   us/op
+PdbLookupBenchmark.testTraditionalHashMap:·gc.alloc.rate        avgt    5  1046.639 ± 159.289  MB/sec
+PdbLookupBenchmark.testTraditionalHashMap:·gc.alloc.rate.norm   avgt    5    71.602 ±   0.001    B/op
+PdbLookupBenchmark.testTraditionalHashMap:·gc.count             avgt    5    24.000            counts
+PdbLookupBenchmark.testTraditionalHashMap:·gc.time              avgt    5    24.000                ms
