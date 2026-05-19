@@ -36,6 +36,31 @@ The same instance is solved under multiple admissible heuristics:
 Since all heuristics are admissible, IDA* should return the same optimal solution depth.
 The PDB/Bitboard implementation is considered valid only when its returned depth is consistent with the baseline solvers.
 
+After the Linear Conflict implementation was corrected, `benchmark_results/Search_results.csv` was regenerated.
+Across 300 trial-instance cases, all four configurations solved every instance and produced zero solution-length mismatches.
+The PDB OOP and PDB Bitboard configurations also produced identical generated-node and expanded-node counts, confirming that the bitboard path preserves the search tree.
+
+## 5. Linear Conflict Implementation Note
+
+An earlier implementation counted every inverted tile pair as a separate `+2` conflict.
+That pairwise rule can double-count a tile when it conflicts with multiple other tiles, which may overestimate the true remaining cost and break admissibility.
+
+The current implementation uses an LIS-based rule for each row and column:
+
+1. keep only tiles whose target position is in the same current row or column;
+2. map them to their target column or target row order;
+3. compute the longest increasing subsequence;
+4. charge `2 * (count - LIS length)` for the minimum number of tiles that must leave the line.
+
+The benchmark anomaly that exposed the bug is now closed:
+
+```text
+Old pairwise Linear Conflict: 48 moves
+Manhattan / PDB:              46 moves
+Fixed LIS Linear Conflict:    46 moves
+Replay validation:            PASS
+```
+
 ## Replay Checker
 
 A lightweight replay checker is provided at:
@@ -62,12 +87,12 @@ python scripts/replay_solution.py --problem bin/problem.txt --actions bin/soluti
 Example output:
 
 ```text
-PASS: 52 actions replayed; final board matches the goal state.
+PASS: 46 actions replayed; final board matches the goal state.
 ```
 
 The optional `--write-trace` argument exports the replayed board states, which can be used for manual inspection or visualization debugging.
 
-## 5. PDB Admissibility
+## 6. PDB Admissibility
 
 The 15 non-blank tiles are partitioned into three disjoint subsets: 6-6-3.
 Each pattern database stores the exact cost of solving one tile subset in the abstract state space.

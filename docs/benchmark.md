@@ -24,16 +24,26 @@ The goal is to distinguish two sources of speedup:
 
 ## 3. Macro Benchmark: 100 Hard 15-Puzzle Instances
 
-Aggregated over 3 trials with a 60-second timeout.
+The raw CSV contains 3 trials. The formal summary below averages Trial 2 and Trial 3, while Trial 1 is retained in the CSV as a recorded warmup/check run.
+The CSV was regenerated after replacing the old pairwise Linear Conflict implementation with the LIS-based implementation.
 
 | Configuration | Success Rate | Mean Time (ms) | StdDev (ms) | Mean Expanded Nodes | Mean EBF |
 |---|---:|---:|---:|---:|---:|
-| IDA* + Manhattan | 99.00% | 5566.3 | 10044.8 | 17,515,815 | 1.341 |
-| IDA* + Linear Conflict | 100.00% | 2389.3 | 4224.2 | 2,069,172 | 1.278 |
-| IDA* + PDB (OOP) | 100.00% | 256.7 | 526.7 | 592,956 | 1.233 |
-| IDA* + PDB (Bitboard) | 100.00% | 47.9 | 97.6 | 592,956 | 1.233 |
+| IDA* + Manhattan | 100.00% | 2375.8 | 5511.7 | 21,132,738 | 1.341 |
+| IDA* + Linear Conflict | 100.00% | 1249.0 | 2202.2 | 2,346,679 | 1.281 |
+| IDA* + PDB (OOP) | 100.00% | 121.0 | 243.7 | 592,957 | 1.233 |
+| IDA* + PDB (Bitboard) | 100.00% | 20.1 | 39.6 | 592,957 | 1.233 |
+
+Validation checks on the regenerated CSV:
+
+- all 300 trial-instance cases solved under all four configurations;
+- zero solution-length mismatches across Manhattan, Linear Conflict, PDB OOP, and PDB Bitboard;
+- PDB OOP and PDB Bitboard have identical generated-node and expanded-node counts for every case;
+- the old pairwise Linear Conflict CSV is preserved as `benchmark_results/Search_results_legacy_pairwise_lc.csv`.
 
 ## 4. Micro Benchmark: State Transition
+
+Conservative reference result:
 
 | Operation | Throughput |
 |---|---:|
@@ -41,6 +51,17 @@ Aggregated over 3 trials with a 60-second timeout.
 | 64-bit Bitboard transition | 541,549 ops/ms |
 
 Speedup: 541,549 / 106,581 ≈ 5.08x.
+
+Multi-fork GC verification was also run with 5 forks, 5 warmup iterations, 10 measurement iterations, and `-prof gc`.
+The CSV output is stored at `benchmark_results/jmh_state_transition_multifork.csv`.
+
+| Operation | Throughput | Allocation | GC Count |
+|---|---:|---:|---:|
+| Traditional `int[]` clone/swap | 107.405 ops/us | 80.000 B/op | 763 |
+| 64-bit Bitboard transition | 706.134 ops/us | 0.000001 B/op | 0 |
+
+Multi-fork throughput speedup: 706.134 / 107.405 ≈ 6.57x.
+For oral defense, this is best stated conservatively as a stable 5x-plus state-transition advantage.
 
 ## 5. Micro Benchmark: PDB Lookup
 
@@ -61,7 +82,8 @@ To reduce benchmark bias, the evaluation uses:
 - success-rate filtering under a 60-second timeout.
 
 An earlier benchmark showed around 11x speedup, but it was later identified as a JVM JIT artifact.
-After redesigning the benchmark with randomized runtime inputs, the stable speedup is around 5.08x.
+After redesigning the benchmark with randomized runtime inputs, the conservative stable speedup is around 5.08x.
+The later 5-fork GC run reported about 6.57x throughput speedup, near-zero allocation for the bitboard path, and 80 B/op for the `int[]` clone/swap path.
 
 ## 7. Interpretation
 

@@ -13,7 +13,7 @@ This project demonstrates that performance gains in combinatorial search problem
 ### 1. Algorithmic Optimizations: State Space Pruning
 - **Heuristic Comparison**: Implemented Manhattan Distance, Linear Conflict, and Disjoint Pattern Databases (PDB).
 - **6-6-3 Pattern Database**: Constructed a statically pre-computed 6-6-3 PDB using a reverse Breadth-First Search (BFS) to compute exact minimal costs.
-- **EBF Reduction**: The PDB heuristic reduces the Effective Branching Factor (EBF) from `1.341` (Manhattan) to `1.233`, decreasing the average number of expanded nodes by approximately **30x** on hard instances.
+- **EBF Reduction**: The PDB heuristic reduces the Effective Branching Factor (EBF) from `1.341` (Manhattan) to `1.233`, decreasing the average number of expanded nodes by approximately **35.6x** on hard instances.
 
 ### 2. System-Level Optimizations: Hardware-Sympathetic Engineering
 - **64-bit Bitboard Compression**: Encoded the 4x4 board state into a single 64-bit `long` primitive. 
@@ -30,17 +30,17 @@ To ensure the empirical validity of the performance measurements, the evaluation
 3. **State Pool Randomization**: JMH benchmarks utilize a 1024-state Random Walk pool to reduce constant folding, dead-code elimination, and cache-locality artifacts.
 
 ### Macro-Level: Search Performance (100 Instances)
-*Aggregated over 3 trials with a 60-second strict timeout per instance.*
+*Raw CSV contains 3 trials. The formal summary averages Trial 2 and Trial 3 with a 60-second strict timeout per instance.*
 
 | Configuration | Success Rate | Mean Time (ms) | StdDev (ms) | Mean Expanded Nodes | Mean EBF |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **IDA* + Manhattan** | 99.00% | 5566.3 | ±10044.8 | 17,515,815 | 1.341 |
-| **IDA* + Linear Conflict**| 100.00% | 2389.3 | ±4224.2 | 2,069,172 | 1.278 |
-| **IDA* + PDB (OOP)** | 100.00% | 256.7 | ±526.7 | 592,956 | 1.233 |
-| **IDA* + PDB (Bitboard)** | 100.00% | **47.9** | **±97.6** | **592,956** | **1.233** |
+| **IDA* + Manhattan** | 100.00% | 2375.8 | ±5511.7 | 21,132,738 | 1.341 |
+| **IDA* + Linear Conflict**| 100.00% | 1249.0 | ±2202.2 | 2,346,679 | 1.281 |
+| **IDA* + PDB (OOP)** | 100.00% | 121.0 | ±243.7 | 592,957 | 1.233 |
+| **IDA* + PDB (Bitboard)** | 100.00% | **20.1** | **±39.6** | **592,957** | **1.233** |
 
 > **Key Insight:**  
-> Algorithmic improvements (PDB) reduce the search space (~30x fewer nodes), while system-level optimizations (Bitboard) further reduce physical execution time (~5.3x speedup, from 256.7ms to 47.9ms) by minimizing memory allocation overhead, without changing the search tree structure.
+> Algorithmic improvements (PDB) reduce the search space (~35.6x fewer nodes), while system-level optimizations (Bitboard) reduce per-node execution cost without changing the search tree. The conservative headline is a stable **5x-plus** state-transition advantage; in this macro run, the PDB Bitboard configuration also reduced end-to-end mean time from 121.0ms to 20.1ms.
 
 *(Visualization of the Ablation Study, EBF, and State Space)*
 <p align="center">
@@ -55,6 +55,8 @@ To ensure the empirical validity of the performance measurements, the evaluation
 - **State Transition Throughput**: 
   - Object-Oriented (`int[]` clone): `106,581 ops/ms`
   - Bitboard (64-bit bitwise): `541,549 ops/ms` **(5.08x Speedup)**
+  - Interpretation: stable **5x-plus** throughput advantage.
+  - 5-fork GC profile: `706.134 ops/us` vs. `107.405 ops/us` **(6.57x)**, with near-zero allocation for the bitboard path and `80 B/op` for the array path.
 - **Heuristic Lookup Latency**:
   - `HashMap<Long, Byte>`: `184 ns/op`
   - 1D `byte[]` Array: `77 ns/op` **(2.38x Speedup)**
@@ -69,7 +71,8 @@ An initial ~11x speedup was later identified as a benchmarking artifact caused b
 
 To correct this, the benchmark was redesigned using randomized state inputs with runtime-dependent indexing. This prevents over-optimization and ensures full execution of the state transition logic.
 
-Under these corrected conditions, the measured speedup stabilizes at ~5.08x, which more accurately reflects real-world performance.
+Under these corrected conditions, the conservative reference speedup is ~5.08x.
+A later 5-fork GC profile measured ~6.57x with near-zero allocation for the bitboard path, but the headline claim remains a stable 5x-plus throughput advantage rather than a single best-case number.
 
 ---
 
@@ -77,6 +80,7 @@ Detailed reports:
 
 - [Benchmark Report](docs/benchmark.md)
 - [Correctness Validation](docs/correctness.md)
+- [Linear Conflict Fix Record](docs/linear_conflict_fix.md)
 - [6-6-3 PDB Design](docs/pdb_design.md)
 - [Visualization Protocol](docs/visualization_protocol.md)
 
@@ -129,7 +133,7 @@ The `6-6-3 Disjoint Pattern Database (.dat)` files are already included in `src/
 
 3. **Run Macro Benchmark (Search Evaluation):**
    ```bash
-   java -cp target/benchmarks.jar benchmark.SearchBenchmarkRunner
+   java -cp "target/classes;target/benchmarks.jar" benchmark.SearchBenchmarkRunner
    ```
    *(Note for Unix/Linux/Mac users: Replace the semicolon `;` with a colon `:` in the classpath.)*
 
