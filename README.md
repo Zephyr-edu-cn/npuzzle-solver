@@ -40,7 +40,7 @@ To ensure the empirical validity of the performance measurements, the evaluation
 | **IDA* + PDB (Bitboard)** | 100.00% | **20.1** | **±39.6** | **592,957** | **1.233** |
 
 > **Key Insight:**  
-> Algorithmic improvements (PDB) reduce the search space (~35.6x fewer nodes), while system-level optimizations (Bitboard) reduce per-node execution cost without changing the search tree. The conservative headline is a stable **5x-plus** state-transition advantage; in this macro run, the PDB Bitboard configuration also reduced end-to-end mean time from 121.0ms to 20.1ms.
+> Algorithmic improvements (PDB) reduce the search space (~35.6x fewer nodes), while system-level optimizations (Bitboard) reduce per-node execution cost without changing the search tree. Across benchmark runs, state transition is reported as a stable **5x-plus** throughput advantage; in this macro run, the PDB Bitboard configuration also reduced end-to-end mean time from 121.0ms to 20.1ms.
 
 *(Visualization of the Ablation Study, EBF, and State Space)*
 <p align="center">
@@ -71,8 +71,9 @@ An initial ~11x speedup was later identified as a benchmarking artifact caused b
 
 To correct this, the benchmark was redesigned using randomized state inputs with runtime-dependent indexing. This prevents over-optimization and ensures full execution of the state transition logic.
 
-Under these corrected conditions, the conservative reference speedup is ~5.08x.
-A later 5-fork GC profile measured ~6.57x with near-zero allocation for the bitboard path, but the headline claim remains a stable 5x-plus throughput advantage rather than a single best-case number.
+Under these corrected conditions, the reference speedup is ~5.08x.
+A later 5-fork GC profile measured ~6.57x with near-zero allocation for the bitboard path.
+To avoid mixing benchmark levels and best-case values, this repository reports the state-transition improvement as a stable 5x-plus throughput advantage.
 
 ---
 

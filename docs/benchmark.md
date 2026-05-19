@@ -43,7 +43,7 @@ Validation checks on the regenerated CSV:
 
 ## 4. Micro Benchmark: State Transition
 
-Conservative reference result:
+Reference result:
 
 | Operation | Throughput |
 |---|---:|
@@ -61,7 +61,7 @@ The CSV output is stored at `benchmark_results/jmh_state_transition_multifork.cs
 | 64-bit Bitboard transition | 706.134 ops/us | 0.000001 B/op | 0 |
 
 Multi-fork throughput speedup: 706.134 / 107.405 ≈ 6.57x.
-For oral defense, this is best stated conservatively as a stable 5x-plus state-transition advantage.
+For summary reporting, this is stated as a stable 5x-plus state-transition advantage instead of a single best-case number.
 
 ## 5. Micro Benchmark: PDB Lookup
 
@@ -82,7 +82,7 @@ To reduce benchmark bias, the evaluation uses:
 - success-rate filtering under a 60-second timeout.
 
 An earlier benchmark showed around 11x speedup, but it was later identified as a JVM JIT artifact.
-After redesigning the benchmark with randomized runtime inputs, the conservative stable speedup is around 5.08x.
+After redesigning the benchmark with randomized runtime inputs, the reference speedup is around 5.08x.
 The later 5-fork GC run reported about 6.57x throughput speedup, near-zero allocation for the bitboard path, and 80 B/op for the `int[]` clone/swap path.
 
 ## 7. Interpretation
