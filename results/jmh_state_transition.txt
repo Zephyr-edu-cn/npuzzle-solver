@@ -1,7 +1,7 @@
-(base) PS C:\Users\DELL\Desktop\finl\npuzzle-solver> & "C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe" -jar target/benchmarks.jar StateRepresentationBenchmark
+(base) PS <local-user-path>\npuzzle-solver> & "<local-java-path>\java.exe" -jar target/benchmarks.jar StateRepresentationBenchmark
 # JMH version: 1.36
 # VM version: JDK 19.0.2, OpenJDK 64-Bit Server VM, 19.0.2+7-FR
-# VM invoker: C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe
+# VM invoker: <local-java-path>\java.exe
 # VM options: <none>
 # Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
 # Warmup: 3 iterations, 1 s each
@@ -31,7 +31,7 @@ Result "benchmark.StateRepresentationBenchmark.testBitboard":
 
 # JMH version: 1.36
 # VM version: JDK 19.0.2, OpenJDK 64-Bit Server VM, 19.0.2+7-FR
-# VM invoker: C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe
+# VM invoker: <local-java-path>\java.exe
 # VM options: <none>
 # Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
 # Warmup: 3 iterations, 1 s each
@@ -61,7 +61,7 @@ Result "benchmark.StateRepresentationBenchmark.testTraditionalArray":
 
 # JMH version: 1.36
 # VM version: JDK 19.0.2, OpenJDK 64-Bit Server VM, 19.0.2+7-FR
-# VM invoker: C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe
+# VM invoker: <local-java-path>\java.exe
 # VM options: <none>
 # Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
 # Warmup: 3 iterations, 1 s each
@@ -91,7 +91,7 @@ Result "benchmark.StateRepresentationBenchmark.testBitboard":
 
 # JMH version: 1.36
 # VM version: JDK 19.0.2, OpenJDK 64-Bit Server VM, 19.0.2+7-FR
-# VM invoker: C:\Users\DELL\.jdks\corretto-19.0.2\bin\java.exe
+# VM invoker: <local-java-path>\java.exe
 # VM options: <none>
 # Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
 # Warmup: 3 iterations, 1 s each
