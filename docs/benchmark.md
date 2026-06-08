@@ -81,9 +81,9 @@ To reduce benchmark bias, the evaluation uses:
 - repeated trials for macro-level evaluation;
 - success-rate filtering under a 60-second timeout.
 
-An earlier benchmark showed around 11x speedup, but it was later identified as a JVM JIT artifact.
+An earlier benchmark showed around 11x speedup, but it was later treated as a likely fixed-input / JIT benchmark artifact risk rather than a stable solver-level result.
 After redesigning the benchmark with randomized runtime inputs, the reference speedup is around 5.08x.
-The later 5-fork GC run reported about 6.57x throughput speedup, near-zero allocation for the bitboard path, and 80 B/op for the `int[]` clone/swap path.
+The later 5-fork GC run reported about 6.57x throughput speedup, near-zero heap allocation in the bitboard state-transition path, and 80 B/op for the `int[]` clone/swap path.
 
 ## 7. Interpretation
 
@@ -91,4 +91,7 @@ PDB and Bitboard improve different levels of the solver.
 
 - PDB reduces the number of expanded nodes by producing a stronger admissible heuristic.
 - Bitboard keeps the search tree unchanged but reduces the cost of each state transition.
-- Therefore, the final speedup comes from combining heuristic pruning with low-level zero-allocation implementation.
+- Therefore, the final speedup comes from combining heuristic pruning with a state-transition hot path that has near-zero heap allocation in the measured JMH/GC profile.
+
+
+Allocation boundary: the near-zero allocation claim is limited to the state-transition hot path measured by the JMH benchmark and GC profiler. It should not be read as a claim that every component of the full IDA* solver or benchmark harness performs zero allocation.

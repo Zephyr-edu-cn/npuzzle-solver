@@ -94,8 +94,8 @@ The optional `--write-trace` argument exports the replayed board states, which c
 
 ## 6. PDB Admissibility
 
-The 15 non-blank tiles are partitioned into three disjoint subsets: 6-6-3.
-Each pattern database stores the exact cost of solving one tile subset in the abstract state space.
+The 15 non-blank tiles are partitioned into three disjoint subsets: 6-6-3. The PDB heuristic is admissible because the abstract database generation uses a cost-partitioned model, not merely because the tile sets are disjoint.
 
-Because the subsets are disjoint, the sum of the three pattern costs is a lower bound of the full puzzle cost.
-Therefore, the 6-6-3 PDB heuristic remains admissible.
+In `PatternDatabaseGenerator`, moving the blank into a pattern tile position changes that pattern encoding and costs 1. Moving the blank across a non-pattern tile leaves that pattern encoding unchanged and costs 0. Therefore, each physical tile move is charged to at most one pattern database: the database containing the moved tile.
+
+The runtime heuristic then sums the three disjoint PDB lookup values. Since the generation-time cost model prevents one physical move from being counted multiple times, the summed 6-6-3 PDB value is a lower bound on the optimal full-puzzle solution cost.

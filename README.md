@@ -17,7 +17,7 @@ This project demonstrates that performance gains in combinatorial search problem
 
 ### 2. System-Level Optimizations: Hardware-Sympathetic Engineering
 - **64-bit Bitboard Compression**: Encoded the 4x4 board state into a single 64-bit `long` primitive. 
-- **Zero-Allocation State Transitions**: Redesigned the IDA* search loop to execute state transitions via bitwise operations (masks and shifts). This eliminates object instantiation (`new int[]` or `new Node()`), eliminating hot-path object allocation and, in profiled runs, avoiding Young Generation GC during deep DFS traversals.
+- **Near-Zero Heap Allocation in the State-Transition Hot Path**: Redesigned the state-transition path to use bitwise operations (masks and shifts) instead of per-move board-array cloning. In the JMH state-transition benchmark and GC profile, the bitboard path reports near-zero heap allocation, while the traditional array clone/swap path reports measurable allocation pressure.
 - **Cache Locality**: Flattened the high-dimensional PDB into a 1D `byte[]` array, avoiding the autoboxing and hashing overhead of `HashMap<Long, Byte>` to improve CPU L1/L2 cache hit rates.
 
 ---
@@ -56,7 +56,7 @@ To ensure the empirical validity of the performance measurements, the evaluation
   - Object-Oriented (`int[]` clone): `106,581 ops/ms`
   - Bitboard (64-bit bitwise): `541,549 ops/ms` **(5.08x Speedup)**
   - Interpretation: stable **5x-plus** throughput advantage.
-  - 5-fork GC profile: `706.134 ops/us` vs. `107.405 ops/us` **(6.57x)**, with near-zero allocation for the bitboard path and `80 B/op` for the array path.
+  - 5-fork GC profile: `706.134 ops/us` vs. `107.405 ops/us` **(6.57x)**, with near-zero heap allocation in the bitboard state-transition path and `80 B/op` for the array path.
 - **Heuristic Lookup Latency**:
   - `HashMap<Long, Byte>`: `184 ns/op`
   - 1D `byte[]` Array: `77 ns/op` **(2.38x Speedup)**
@@ -67,12 +67,12 @@ To ensure the empirical validity of the performance measurements, the evaluation
 
 #### Benchmark Methodology Note (Self-Correction)
 
-An initial ~11x speedup was later identified as a benchmarking artifact caused by JVM JIT optimizations (e.g., constant folding and dead code elimination), which partially removed the baseline workload.
+An initial ~11x speedup was later treated as a likely fixed-input / JIT benchmark artifact risk. The original microbenchmark used overly stable inputs and could be affected by constant folding, dead-code elimination, or cache-locality artifacts; however, this was not verified with assembly-level or perf-level evidence.
 
-To correct this, the benchmark was redesigned using randomized state inputs with runtime-dependent indexing. This prevents over-optimization and ensures full execution of the state transition logic.
+To reduce this risk, the benchmark was redesigned using randomized state inputs with runtime-dependent indexing. This makes the benchmark less dependent on fixed inputs and helps ensure that the state-transition logic is actually executed.
 
 Under these corrected conditions, the reference speedup is ~5.08x.
-A later 5-fork GC profile measured ~6.57x with near-zero allocation for the bitboard path.
+A later 5-fork GC profile measured ~6.57x with near-zero heap allocation in the bitboard state-transition path.
 To avoid mixing benchmark levels and best-case values, this repository reports the state-transition improvement as a stable 5x-plus throughput advantage.
 
 ---
@@ -90,6 +90,8 @@ Detailed reports:
 ## Search Visualization Pipeline (Java + C++)
 
 To complement quantitative benchmarking, this project includes a cross-language visualization pipeline for qualitative analysis of search behavior.
+
+This repository mainly provides the Java-side trace export and replay validation. The C++ / SFML viewer is an external visualization frontend used to inspect exported trajectories.
 
 - **Backend (Java)**:
   - The IDA* solver serializes DFS search trajectories into a compact state sequence format.

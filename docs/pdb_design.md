@@ -45,3 +45,13 @@ This improves:
 
 Earlier pattern database attempts exposed memory pressure and indexing consistency issues.
 The final implementation uses 6-6-3 partitioning, compact indexing, and raw byte-array storage to balance heuristic strength and memory feasibility.
+
+## 7. Additivity and Cost Partitioning
+
+The 6-6-3 PDB is additive under the same cost-partitioned abstraction used by `PatternDatabaseGenerator`.
+
+During reverse BFS generation, the blank position is tracked together with the pattern encoding. When the blank swaps with a tile that belongs to the current pattern, the transition has cost 1 and is pushed to the next cost layer. When the blank swaps with a non-pattern tile, the pattern encoding does not change, the transition has cost 0, and it remains in the current cost layer.
+
+This means that a physical tile move is charged only to the pattern containing the moved tile. Non-pattern moves are zero-cost transitions for the current pattern, so the same physical move is not counted by multiple pattern databases. Therefore, summing the three disjoint PDB values remains admissible.
+
+The blank is still part of the abstract state because it determines which swaps are legal, but blank repositioning is not independently charged across all patterns.
