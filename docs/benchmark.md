@@ -95,3 +95,7 @@ PDB and Bitboard improve different levels of the solver.
 
 
 Allocation boundary: the near-zero allocation claim is limited to the state-transition hot path measured by the JMH benchmark and GC profiler. It should not be read as a claim that every component of the full IDA* solver or benchmark harness performs zero allocation.
+
+## PDB Lookup Benchmark Boundary
+
+The `HashMap` lookup benchmark uses representative keys sampled from the 1024-state random-walk pool, rather than a full in-memory `HashMap` representation of the entire PDB. It is intended to compare lookup overhead under controlled access patterns, not to model the full memory footprint of a production HashMap-based PDB.
