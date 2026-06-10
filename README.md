@@ -1,7 +1,7 @@
 # High-Performance N-Puzzle Solver
 
 ![Language](https://img.shields.io/badge/Language-Java_19-blue.svg)
-![Build](https://img.shields.io/badge/Build-passing-brightgreen.svg)
+[![Maven CI](https://github.com/Zephyr-edu-cn/npuzzle-solver/actions/workflows/maven-ci.yml/badge.svg)](https://github.com/Zephyr-edu-cn/npuzzle-solver/actions/workflows/maven-ci.yml)
 ![Benchmark](https://img.shields.io/badge/Benchmark-JMH-orange.svg)
 
 A high-performance heuristic search engine for the 15-Puzzle problem. This project investigates performance optimizations across two dimensions: **algorithmic state-space pruning** and **system-level memory management**. All implementations are evaluated under standardized benchmarking methodologies to reduce benchmarking bias and improve empirical reliability.
