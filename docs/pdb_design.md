@@ -1,57 +1,68 @@
 # 6-6-3 Disjoint Pattern Database Design
 
-## 1. Motivation
+## 1. Scope and Partition
 
-Manhattan Distance estimates each tile independently and ignores interactions between tiles.
-Pattern Database stores exact costs for abstract subproblems, providing a stronger admissible heuristic.
+The bundled database is for the canonical 4x4 goal `[1, 2, ..., 15, 0]`. It is not goal-independent; runtime use with another goal fails fast.
 
-## 2. Pattern Split
+The non-blank tiles are partitioned as:
 
-The 15 non-blank tiles are divided into three disjoint groups:
+- PDB 1: `{1, 5, 6, 9, 10, 13}`
+- PDB 2: `{7, 8, 11, 12, 14, 15}`
+- PDB 3: `{2, 3, 4}`
 
-- Pattern 1: 6 tiles
-- Pattern 2: 6 tiles
-- Pattern 3: 3 tiles
+The runtime heuristic is `h(s) = h1(s) + h2(s) + h3(s)`.
 
-The final heuristic is:
+## 2. Abstract State and Cost Partitioning
 
-h(s) = h<small>1</small>(s) + h<small>2</small>(s) + h<small>3</small>(s)
+A generator state contains the positions of the current pattern tiles plus the blank position. The blank is needed to determine which swaps are legal, but blank movement is not charged independently in every PDB.
 
-## 3. Reverse BFS Generation
+For each reverse transition:
 
-Each PDB is generated from the goal state by reverse BFS.
-For each abstract state, the database records the minimum number of moves required to restore the corresponding tile subset.
+- blank swaps with a pattern tile: cost 1 and the pattern encoding changes;
+- blank swaps with a non-pattern tile: cost 0 and the pattern encoding is unchanged.
 
-## 4. Runtime Lookup
+The generator uses standard 0-1 BFS over `(pattern encoding, blank position)`: a 0-cost relaxation is added to the front of a primitive deque, a 1-cost relaxation is added to the back, and a state is settled when removed at minimum distance. Consequently, each physical tile move is charged only to the database containing that tile. The sum of the three abstract distances is therefore admissible.
 
-During IDA* search:
+## 3. Compact Index
 
-1. encode the current board into pattern indices;
-2. query three precomputed databases;
-3. sum the three values as the heuristic estimate.
+For a `k`-tile pattern, each tile position occupies four bits. A 6-tile index uses 24 bits and a 3-tile index uses 12 bits. The index is used directly in a flat `byte[]`:
 
-## 5. Compact Storage
+- each 6-tile table: `2^24 = 16,777,216` bytes;
+- 3-tile table: `2^12 = 4,096` bytes;
+- total payload: 32 MiB + 4 KiB.
 
-The optimized implementation stores PDB data in raw `byte[]` arrays instead of `HashMap<Long, Byte>`.
+Many bit patterns encode duplicate tile positions and are unreachable; those entries remain fallback zero values. Legal solver states always produce distinct positions and therefore address generated entries.
 
-This improves:
+At runtime, OOP reconstructs the three indices by scanning the board. Mutable Array and Bitboard carry the indices through DFS and update only the moved tile's four-bit position field.
 
-- memory locality;
-- lookup latency;
-- GC behavior;
-- cache friendliness.
+## 4. Generation and File Validation
 
-## 6. Implementation Lessons
+Reverse generation covers every legal ordered placement:
 
-Earlier pattern database attempts exposed memory pressure and indexing consistency issues.
-The final implementation uses 6-6-3 partitioning, compact indexing, and raw byte-array storage to balance heuristic strength and memory feasibility.
+| Pattern | Legal encodings | Maximum cost layer |
+|---|---:|---:|
+| `{1,5,6,9,10,13}` | 5,765,760 | 28 |
+| `{7,8,11,12,14,15}` | 5,765,760 | 26 |
+| `{2,3,4}` | 3,360 | 15 |
 
-## 7. Additivity and Cost Partitioning
+`stateCount` is incremented when an encoding is first settled, including the goal encoding. This produces the exact legal-encoding counts shown above. Regeneration with the standard relaxation-based 0-1 BFS produced byte-for-byte identical cost payloads to the previously bundled tables.
 
-The 6-6-3 PDB is additive under the same cost-partitioned abstraction used by `PatternDatabaseGenerator`.
+Payload SHA-256 values after regeneration:
 
-During reverse BFS generation, the blank position is tracked together with the pattern encoding. When the blank swaps with a tile that belongs to the current pattern, the transition has cost 1 and is pushed to the next cost layer. When the blank swaps with a non-pattern tile, the pattern encoding does not change, the transition has cost 0, and it remains in the current cost layer.
+- PDB 1: `FD373C43963355D5D6CBD7615C3EBA55E950D39B76E4496DC20171CF1D3385A2`
+- PDB 2: `54C3CD8099383864F091A7BC4E1850CAF17CD90884B32EED45FB18185F080D78`
+- PDB 3: `3D8AA3794F6183A507494CD021441D9B4FC3C1B09100DDE5920ADEEBE177E98A`
 
-This means that a physical tile move is charged only to the pattern containing the moved tile. Non-pattern moves are zero-cost transitions for the current pattern, so the same physical move is not counted by multiple pattern databases. Therefore, summing the three disjoint PDB values remains admissible.
+The loader validates:
 
-The blank is still part of the abstract state because it determines which swaps are legal, but blank repositioning is not independently charged across all patterns.
+- board size 4;
+- exact ordered subset;
+- expected permutation count `P(16, k)`;
+- complete payload length;
+- absence of trailing bytes.
+
+## 5. Storage Trade-off
+
+Direct indexing intentionally spends memory to remove hashing, boxing, collision handling, and key storage from the lookup path. The repository's PDB lookup microbenchmark measures lower latency for representative direct-array lookups than for representative `HashMap<Long, Byte>` lookups. No claim is made about a measured hardware cache-hit rate.
+
+For a larger puzzle or a larger pattern, `16^k`-style direct indexing may become impractical. The representation and cost type would need to be reconsidered rather than assumed to scale unchanged.

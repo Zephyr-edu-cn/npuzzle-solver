@@ -4,155 +4,168 @@
 [![Maven CI](https://github.com/Zephyr-edu-cn/npuzzle-solver/actions/workflows/maven-ci.yml/badge.svg)](https://github.com/Zephyr-edu-cn/npuzzle-solver/actions/workflows/maven-ci.yml)
 ![Benchmark](https://img.shields.io/badge/Benchmark-JMH-orange.svg)
 
-A high-performance heuristic search engine for the 15-Puzzle problem. This project investigates performance optimizations across two dimensions: **algorithmic state-space pruning** and **system-level memory management**. All implementations are evaluated under standardized benchmarking methodologies to reduce benchmarking bias and improve empirical reliability.
-
-This project demonstrates that performance gains in combinatorial search problems stem from a combination of **search space reduction (algorithm design)** and **constant-factor optimization (system implementation)**.
-
-## Key Optimizations
-
-### 1. Algorithmic Optimizations: State Space Pruning
-- **Heuristic Comparison**: Implemented Manhattan Distance, Linear Conflict, and Disjoint Pattern Databases (PDB).
-- **6-6-3 Pattern Database**: Constructed a statically pre-computed 6-6-3 PDB using a reverse Breadth-First Search (BFS) to compute exact minimal costs.
-- **EBF Reduction**: The PDB heuristic reduces the Effective Branching Factor (EBF) from `1.341` (Manhattan) to `1.233`, decreasing the average number of expanded nodes by approximately **35.6x** on hard instances.
-
-### 2. System-Level Optimizations: Hardware-Sympathetic Engineering
-- **64-bit Bitboard Compression**: Encoded the 4x4 board state into a single 64-bit `long` primitive. 
-- **Near-Zero Heap Allocation in the State-Transition Hot Path**: Redesigned the state-transition path to use bitwise operations (masks and shifts) instead of per-move board-array cloning. In the JMH state-transition benchmark and GC profile, the bitboard path reports near-zero heap allocation, while the traditional array clone/swap path reports measurable allocation pressure.
-- **Cache Locality**: Flattened the high-dimensional PDB into a 1D `byte[]` array, avoiding the autoboxing and hashing overhead of `HashMap<Long, Byte>` to improve CPU L1/L2 cache hit rates.
-
----
-
-## Benchmarking & Evaluation
-
-To ensure the empirical validity of the performance measurements, the evaluation framework implements the following methodological safeguards:
-1. **Global JIT Warmup**: Pre-executing all configurations to trigger JVM C2 compilation prior to measurement.
-2. **Common Solved-Set Evaluation**: Time statistics (Mean Time and StdDev) are calculated *strictly on the intersection set* of instances solved by all configurations within the timeout limit.
-3. **State Pool Randomization**: JMH benchmarks utilize a 1024-state Random Walk pool to reduce constant folding, dead-code elimination, and cache-locality artifacts.
-
-### Macro-Level: Search Performance (100 Instances)
-*Raw CSV contains 3 trials. The formal summary averages Trial 2 and Trial 3 with a 60-second strict timeout per instance.*
-
-| Configuration | Success Rate | Mean Time (ms) | StdDev (ms) | Mean Expanded Nodes | Mean EBF |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **IDA* + Manhattan** | 100.00% | 2375.8 | ±5511.7 | 21,132,738 | 1.341 |
-| **IDA* + Linear Conflict**| 100.00% | 1249.0 | ±2202.2 | 2,346,679 | 1.281 |
-| **IDA* + PDB (OOP)** | 100.00% | 121.0 | ±243.7 | 592,957 | 1.233 |
-| **IDA* + PDB (Bitboard)** | 100.00% | **20.1** | **±39.6** | **592,957** | **1.233** |
-
-> **Key Insight:**  
-> Algorithmic improvements (PDB) reduce the search space (~35.6x fewer nodes), while system-level optimizations (Bitboard) reduce per-node execution cost without changing the search tree. Across benchmark runs, state transition is reported as a stable **5x-plus** throughput advantage; in this macro run, the PDB Bitboard configuration also reduced end-to-end mean time from 121.0ms to 20.1ms.
-
-*(Visualization of the Ablation Study, EBF, and State Space)*
-<p align="center">
-  <img src="./assets/ablation_time.png" width="32.4%"/>
-  <img src="./assets/ebf.png" width="32%"/>
-  <img src="./assets/state_space.png" width="28.7%"/>
-</p>
-
-### Micro-Level: Throughput (JMH Micro-benchmarks)
-*Measured via Java Microbenchmark Harness (JMH) on fundamental operations.*
-
-- **State Transition Throughput**: 
-  - Object-Oriented (`int[]` clone): `106,581 ops/ms`
-  - Bitboard (64-bit bitwise): `541,549 ops/ms` **(5.08x Speedup)**
-  - Interpretation: stable **5x-plus** throughput advantage.
-  - 5-fork GC profile: `706.134 ops/us` vs. `107.405 ops/us` **(6.57x)**, with near-zero heap allocation in the bitboard state-transition path and `80 B/op` for the array path.
-- **Heuristic Lookup Latency**:
-  - `HashMap<Long, Byte>`: `184 ns/op`
-  - 1D `byte[]` Array: `77 ns/op` **(2.38x Speedup)**
-
-<p align="center">
-  <img src="./assets/bitboard_throughput.png" width="50%"/>
-</p>
-
-#### Benchmark Methodology Note (Self-Correction)
-
-An initial ~11x speedup was later treated as a likely fixed-input / JIT benchmark artifact risk. The original microbenchmark used overly stable inputs and could be affected by constant folding, dead-code elimination, or cache-locality artifacts; however, this was not verified with assembly-level or perf-level evidence.
-
-To reduce this risk, the benchmark was redesigned using randomized state inputs with runtime-dependent indexing. This makes the benchmark less dependent on fixed inputs and helps ensure that the state-transition logic is actually executed.
-
-Under these corrected conditions, the reference speedup is ~5.08x.
-A later 5-fork GC profile measured ~6.57x with near-zero heap allocation in the bitboard state-transition path.
-To avoid mixing benchmark levels and best-case values, this repository reports the state-transition improvement as a stable 5x-plus throughput advantage.
-
----
-
-Detailed reports:
-
-- [Benchmark Report](docs/benchmark.md)
-- [Correctness Validation](docs/correctness.md)
-- [Linear Conflict Fix Record](docs/linear_conflict_fix.md)
-- [6-6-3 PDB Design](docs/pdb_design.md)
-- [Visualization Protocol](docs/visualization_protocol.md)
-
----
-
-## Search Visualization Pipeline (Java + C++)
-
-To complement quantitative benchmarking, this project includes a cross-language visualization pipeline for qualitative analysis of search behavior.
-
-This repository mainly provides the Java-side trace export and replay validation. The C++ / SFML viewer is an external visualization frontend used to inspect exported trajectories.
-
-- **Backend (Java)**:
-  - The IDA* solver serializes DFS search trajectories into a compact state sequence format.
-  - Custom encoding avoids object overhead and enables efficient streaming of large search traces.
-
-- **Frontend (C++ / SFML)**:
-  - Visualization engine: https://github.com/BroMikey/Npuzzle-Visulization
-  - Parses serialized sequences via a custom protocol and reconstructs the search process for rendering.
-  - Hardware-accelerated rendering enables smooth playback of large search traces.
-
-This pipeline enables:
-- Inspection of search trajectories and solution paths
-- Visualization of heuristic guidance behavior
-- Debugging and validation of search correctness
+A Java IDA* solver for the canonical 15-Puzzle. The project studies performance at two levels: reducing the search tree with stronger admissible heuristics, and reducing per-node overhead with specialized state representations.
 
 <p align="center">
   <img src="./assets/visualization.gif" width="50%"/>
 </p>
 
----
+## Core Design
 
-## Build & Reproducibility
+### Search and heuristics
 
-### Prerequisites
-- JDK 19 or higher
-- Apache Maven 3.x
+- IDA* with threshold progression to the minimum `f = g + h` that exceeded the previous bound.
+- Manhattan Distance, LIS-based Linear Conflict, and an additive 6-6-3 Disjoint Pattern Database.
+- Reverse 0/1-cost PDB generation: moving a pattern tile costs 1; moving a non-pattern tile costs 0.
+- Immediate-reversal pruning without a global closed set, preserving IDA*'s low-memory design.
 
-### Execution Guide
+### State representations
 
-The `6-6-3 Disjoint Pattern Database (.dat)` files are already included in `src/main/resources/` for immediate out-of-the-box reproducibility.
+The PDB solver has three execution paths with the same move order, threshold logic, PDB tables, reverse-move pruning, goal test, and node counters:
 
-1. **Compile the project and build the JMH Uber-JAR:**
-   ```bash
-   mvn clean package
-   ```
+1. **OOP**: immutable `PuzzleBoard` objects and full PDB-index reconstruction.
+2. **Mutable Array**: one in-place `int[]` with swap/backtrack and incremental PDB indices.
+3. **Bitboard**: a packed 64-bit board with bitwise transitions and incremental PDB indices.
 
-2. **Run JMH Micro-benchmarks (Micro-Level):**
-   ```bash
-   java -jar target/benchmarks.jar StateTransitionBenchmark
-   java -jar target/benchmarks.jar PdbLookupBenchmark
-   ```
+The Mutable Array path is the strong baseline for isolating the additional contribution of packed representation. The OOP-to-Bitboard comparison measures the combined effect of avoiding object copies, avoiding full index reconstruction, and packing the board.
 
-3. **Run Macro Benchmark (Search Evaluation):**
-   ```bash
-   java -cp "target/classes;target/benchmarks.jar" benchmark.SearchBenchmarkRunner
-   ```
-   *(Note for Unix/Linux/Mac users: Replace the semicolon `;` with a colon `:` in the classpath.)*
+## Correctness Boundaries
 
-### Replay exported solution
+- A solved root returns a zero-move path.
+- Goal detection compares actual board states; it does not infer the goal from `h == 0`.
+- General heuristics support goal-relative search.
+- The bundled 6-6-3 PDB is goal-specific and accepts only the canonical goal `[1, 2, ..., 15, 0]`; other goals fail fast.
+- Problem construction rejects invalid board sizes and tile permutations.
+- `scripts/replay_solution.py` independently replays exported moves and checks the final state.
+- An executable JUnit test exhaustively checks all 181,440 reachable 8-Puzzle states for Linear Conflict admissibility and consistency.
 
-After running the Java solver, validate the exported solution path:
+## Macro Benchmark
+
+The formal runner uses the fixed repository dataset `datasets/my_benchmark_100.txt`:
+
+- 100 unique solvable instances;
+- 5 measured trials and 5 solver configurations;
+- 120-second timeout per search;
+- search timing inside the worker task with `System.nanoTime()`;
+- cyclic counterbalancing so every configuration occupies every execution position;
+- per-instance median time, followed by paired speedup statistics.
+
+All 2,500 runs solved successfully. Across 500 trial-instance groups there were zero solution-length mismatches. OOP, Mutable Array, and Bitboard PDB paths had identical generated and expanded node counts in every group.
+
+| Configuration | Mean of per-instance medians (ms) | Median (ms) | Mean expanded | Mean EBF |
+|---|---:|---:|---:|---:|
+| IDA* + Manhattan | 2659.761 | 377.087 | 21,132,738 | 1.342 |
+| IDA* + Linear Conflict | 1328.253 | 269.930 | 2,346,679 | 1.281 |
+| IDA* + PDB (OOP) | 138.628 | 21.863 | 592,957 | 1.233 |
+| IDA* + PDB (Mutable Array) | 24.231 | 4.539 | 592,957 | 1.233 |
+| IDA* + PDB (Bitboard) | **19.421** | **3.848** | **592,957** | **1.233** |
+
+The PDB reduces mean expanded nodes by about **35.64x** relative to Manhattan.
+
+<p align="center">
+  <img src="./assets/search_scale_reduction.png" width="82%"/>
+</p>
+
+The figure uses one expanded-node value per configuration and unique instance after verifying that all five repeated trials had identical node counts.
+
+Paired geometric-mean speedups are:
+
+- PDB OOP to Mutable Array: **4.944x**
+- Mutable Array to Bitboard: **1.218x**
+- PDB OOP to Bitboard: **6.023x**
+
+The final comparison is therefore a combined specialized-path gain, not a pure Bitboard gain. Raw data is in [`benchmark_results/Search_results_v2.csv`](benchmark_results/Search_results_v2.csv).
+
+<p align="center">
+  <img src="./assets/layered_performance_comparison.png" width="82%"/>
+</p>
+
+The first step is a combined in-place/incremental hot-path gain. The second step measures the additional packed-representation benefit under the matched incremental algorithm.
+
+## JMH Microbenchmarks
+
+The state-transition microbenchmark compares `int[]` clone/swap with a packed-long transition over a 1024-state random-walk pool and runtime-dependent indexing.
+
+- Conservative reference: `541,549 / 106,581 = 5.08x` throughput.
+- Five-fork GC profile: `706.134 / 107.405 = 6.57x` throughput.
+- Allocation profile: approximately `80 B/op` for clone/swap and near `0 B/op` for the packed transition.
+
+The public summary remains **stable 5x-plus** for this narrow clone/swap microbenchmark. It is not a claim that Bitboard is 5x faster than the in-place Mutable Array solver. The macro ablation above measures that stronger comparison separately.
+
+The PDB lookup benchmark reports `184 ns/op` for representative `HashMap<Long, Byte>` lookups and `77 ns/op` for direct `byte[]` lookup. This supports the measured lookup-latency claim; no hardware-counter claim about a specific L1/L2 hit rate is made.
+
+### Benchmark correction record
+
+An early fixed-input transition benchmark reported about 11x. Because fixed inputs can expose constant-folding, dead-code-elimination, and other JIT artifact risks, that result was withdrawn. The current benchmark uses a state pool, runtime indexing, and a `Blackhole`. No assembly-level claim about a specific C2 optimization is made.
+
+The earlier macro CSV also used millisecond timing started after task submission and a fixed configuration order. It is retained only as legacy evidence. The current runner measures `search()` inside the task with nanosecond resolution and counterbalances order.
+
+## Documentation
+
+- [Benchmark report](docs/benchmark.md)
+- [Correctness validation](docs/correctness.md)
+- [Linear Conflict fix record](docs/linear_conflict_fix.md)
+- [6-6-3 PDB design](docs/pdb_design.md)
+- [Visualization protocol](docs/visualization_protocol.md)
+
+## Visualization
+
+This repository provides the Java-side trace export and replay validation used with an external C++/SFML viewer:
+
+- Viewer: https://github.com/BroMikey/Npuzzle-Visulization
+- Protocol notes: [docs/visualization_protocol.md](docs/visualization_protocol.md)
+
+## Build and Reproduction
+
+Prerequisites: JDK 19 or later and Maven 3.x.
 
 ```bash
-python scripts/replay_solution.py --problem bin/problem.txt --actions bin/solutionAnimation.txt --write-trace examples/latest_validated_trace.txt
+mvn clean package
 ```
 
-Expected output:
+Run the formal macro benchmark:
+
+```bash
+java -cp target/classes benchmark.SearchBenchmarkRunner
+```
+
+Optional properties include:
 
 ```text
-PASS: 52 actions replayed; final board matches the goal state.
+-Dnpuzzle.benchmark.trials=5
+-Dnpuzzle.benchmark.timeoutSeconds=120
+-Dnpuzzle.benchmark.maxInstances=100
+-Dnpuzzle.benchmark.output=benchmark_results/Search_results_v2.csv
 ```
----
-## Conclusion
-This project demonstrates that combining heuristic design (to reduce search space) with hardware-aware implementation (to reduce constant factors) leads to multiplicative performance gains in combinatorial search problems.
+
+Regenerate the README figures from the formal CSV (requires Pillow):
+
+    python scripts/generate_readme_figures.py
+Run JMH:
+
+```bash
+java -jar target/benchmarks.jar StateTransitionBenchmark
+java -jar target/benchmarks.jar PdbLookupBenchmark
+```
+
+Regenerate the bundled PDB files:
+
+```bash
+java -Xmx2g -cp target/classes npuzzle.solver.database.PatternDatabaseGenerator
+```
+
+Replay an exported solution:
+
+```bash
+python scripts/replay_solution.py --problem bin/problem.txt --actions bin/solutionAnimation.txt
+```
+
+Expected output for the bundled example:
+
+```text
+PASS: 46 actions replayed; final board matches the goal state.
+```
+
+## Scope
+
+This is an implementation, optimization, validation, and correction study of established search techniques. It does not claim a new search algorithm. The fixed 100-instance dataset is repository-specific rather than the official Korf 100 set; its file identity is recorded in the benchmark report, while its original seed and selection metadata are not available.

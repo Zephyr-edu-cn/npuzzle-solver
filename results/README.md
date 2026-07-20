@@ -1,8 +1,10 @@
 # Raw Benchmark Results
 
-This directory stores raw outputs used by the README and benchmark report.
+This directory contains historical text exports from earlier benchmark runs.
 
-- `academic_results.csv`: macro benchmark results over 100 hard instances.
-- `jmh_state_transition.txt`: JMH output for state transition benchmark.
-- `jmh_pdb_lookup.txt`: JMH output for PDB lookup benchmark.
-- `gc_profile.txt`: JMH GC profiler output.
+- `academic_results.csv`: legacy macro snapshot; current formal macro evidence is `benchmark_results/Search_results_v2.csv`.
+- `jmh_state_transition.txt`: conservative state-transition JMH reference.
+- `jmh_pdb_lookup.txt`: PDB lookup JMH output.
+- `gc_profile.txt`: earlier GC-profiler output.
+
+See `docs/benchmark.md` for the current protocol, results, and evidence boundaries.

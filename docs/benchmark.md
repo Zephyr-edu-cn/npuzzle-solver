@@ -1,101 +1,140 @@
 # Benchmark Report
 
-## 1. Evaluation Goal
+## 1. Questions
 
-This benchmark evaluates two types of optimizations in the 15-Puzzle solver:
+The benchmark separates three effects in the canonical 15-Puzzle solver:
 
-1. Algorithmic pruning: Manhattan, Linear Conflict, and 6-6-3 Disjoint PDB.
-2. System-level optimization: object-oriented board representation vs. 64-bit Bitboard.
+1. How much do stronger admissible heuristics reduce the search tree?
+2. How much does replacing the generic immutable OOP path with an allocation-free, incremental-index path reduce solver time?
+3. After those changes are controlled, how much additional benefit comes from a packed 64-bit representation over an in-place `int[]`?
 
-The goal is to distinguish two sources of speedup:
+## 2. Formal Macro Protocol
 
-- PDB reduces the search tree size.
-- Bitboard reduces the per-node transition cost.
+- Runtime: JetBrains Runtime OpenJDK 21.0.10; project bytecode target is Java 19.
+- Operating system: Windows NT 10.0.26200.0.
+- Threads: one solver task at a time.
+- Dataset: `datasets/my_benchmark_100.txt`, 100 unique solvable instances.
+- Dataset SHA-256: `EECDB98717EB0463CBDDCE3B93AE588AE2FF4D7A736C6D622D395CBD9A24F731`.
+- Repetitions: 5 measured trials per configuration and instance.
+- Timeout: 120 seconds per search.
+- Warmup: all configurations over the first 5 instances before measurement.
+- Timer: `System.nanoTime()` immediately around `search()` inside the worker task.
+- Execution order: cyclic counterbalancing over trial and instance indices.
+- Summary unit: median search time for each instance across five trials.
+- Speedup summary: geometric mean and median of paired per-instance ratios.
 
-## 2. Environment
+The timer includes solver initialization performed inside `search()`, threshold iterations, and solution-path construction. It excludes task submission and `Future.get()` waiting before the task starts. The timeout mechanism remains outside the measured interval.
 
-- JDK: OpenJDK / Amazon Corretto 19.0.2
-- Build tool: Maven
-- JMH version: 1.36
-- Threads: 1
-- Warmup: 3 iterations, 1 second each
-- Measurement: 5 iterations, 1 second each
-- Macro benchmark timeout: 60 seconds per instance
+The dataset is repository-specific, not the official Korf 100 set. The file is fixed and hashed, but the original random seed, walk length, and selection metadata were not preserved. Results should therefore be described as a fixed self-built 100-instance benchmark.
 
-## 3. Macro Benchmark: 100 Hard 15-Puzzle Instances
+## 3. Solver Configurations
 
-The raw CSV contains 3 trials. The formal summary below averages Trial 2 and Trial 3, while Trial 1 is retained in the CSV as a recorded warmup/check run.
-The CSV was regenerated after replacing the old pairwise Linear Conflict implementation with the LIS-based implementation.
+| Configuration | State/update path | PDB index update |
+|---|---|---|
+| IDA* + Manhattan | Immutable OOP | Not applicable |
+| IDA* + Linear Conflict | Immutable OOP | Not applicable |
+| IDA* + PDB OOP | Immutable `PuzzleBoard` objects | Recomputed from the board |
+| IDA* + PDB Mutable Array | In-place `int[]` swap/backtrack | Incremental |
+| IDA* + PDB Bitboard | Packed `long` transition | Incremental |
 
-| Configuration | Success Rate | Mean Time (ms) | StdDev (ms) | Mean Expanded Nodes | Mean EBF |
+The three PDB configurations share the same IDA* threshold logic, move order, immediate-reversal pruning, PDB tables, actual-state goal test, and node-count definitions. Mutable Array is the strong representation baseline. PDB OOP remains a generic implementation baseline rather than a pure array-vs-long comparison.
+
+## 4. Results
+
+Raw data: `benchmark_results/Search_results_v2.csv`.
+
+CSV SHA-256: `B21FD0A46528204A154977E733321CE4A9615AE6364777FF8FB1FC8D33F68DAA`.
+
+| Configuration | Complete instances | Mean of per-instance medians (ms) | Median (ms) | Mean expanded | Mean EBF |
 |---|---:|---:|---:|---:|---:|
-| IDA* + Manhattan | 100.00% | 2375.8 | 5511.7 | 21,132,738 | 1.341 |
-| IDA* + Linear Conflict | 100.00% | 1249.0 | 2202.2 | 2,346,679 | 1.281 |
-| IDA* + PDB (OOP) | 100.00% | 121.0 | 243.7 | 592,957 | 1.233 |
-| IDA* + PDB (Bitboard) | 100.00% | 20.1 | 39.6 | 592,957 | 1.233 |
+| IDA* + Manhattan | 100/100 | 2659.761 | 377.087 | 21,132,738 | 1.342 |
+| IDA* + Linear Conflict | 100/100 | 1328.253 | 269.930 | 2,346,679 | 1.281 |
+| IDA* + PDB OOP | 100/100 | 138.628 | 21.863 | 592,957 | 1.233 |
+| IDA* + PDB Mutable Array | 100/100 | 24.231 | 4.539 | 592,957 | 1.233 |
+| IDA* + PDB Bitboard | 100/100 | 19.421 | 3.848 | 592,957 | 1.233 |
 
-Validation checks on the regenerated CSV:
+PDB reduces the mean number of expanded nodes by `21,132,738 / 592,957 = 35.64x` relative to Manhattan.
 
-- all 300 trial-instance cases solved under all four configurations;
-- zero solution-length mismatches across Manhattan, Linear Conflict, PDB OOP, and PDB Bitboard;
-- PDB OOP and PDB Bitboard have identical generated-node and expanded-node counts for every case;
-- the old pairwise Linear Conflict CSV is preserved as `benchmark_results/Search_results_legacy_pairwise_lc.csv`.
+Paired search-time speedups:
 
-## 4. Micro Benchmark: State Transition
+| Comparison | Geometric mean | Median ratio | Interpretation |
+|---|---:|---:|---|
+| PDB OOP to Mutable Array | 4.944x | 5.173x | Removing immutable-board copies and full PDB-index reconstruction |
+| Mutable Array to Bitboard | 1.218x | 1.225x | Additional packed-representation benefit under the same incremental algorithm |
+| PDB OOP to Bitboard | 6.023x | 6.386x | Combined specialized-path benefit; not a pure Bitboard attribution |
+## 5. Independent Data Checks
 
-Reference result:
+A separate CSV audit, independent of the runner summary, found:
 
-| Operation | Throughput |
-|---|---:|
-| Traditional `int[]` clone/swap | 106,581 ops/ms |
-| 64-bit Bitboard transition | 541,549 ops/ms |
+- 2,500 rows: 5 trials x 100 instances x 5 configurations;
+- 2,500 `Solved` rows and no timeout, OOM, or error;
+- each of the 25 configuration/execution-position cells appears exactly 100 times;
+- zero solution-length mismatches across 500 trial-instance groups;
+- zero generated-node or expanded-node mismatches across the three PDB paths.
 
-Speedup: 541,549 / 106,581 ≈ 5.08x.
+The node equality is evidence that Mutable Array and Bitboard preserve the PDB OOP search tree. Equal solution depth is supporting cross-validation; the optimality argument still depends on IDA* threshold semantics and admissible heuristics.
 
-Multi-fork GC verification was also run with 5 forks, 5 warmup iterations, 10 measurement iterations, and `-prof gc`.
-The CSV output is stored at `benchmark_results/jmh_state_transition_multifork.csv`.
+## 6. JMH State-Transition Benchmark
 
-| Operation | Throughput | Allocation | GC Count |
+The JMH benchmark uses a 1024-state random-walk pool, a fixed generation seed, runtime-dependent indexing, and a `Blackhole`. It compares an `int[]` clone/swap transition with a packed-long transition.
+
+| Run | `int[]` clone/swap | Packed `long` | Ratio |
 |---|---:|---:|---:|
-| Traditional `int[]` clone/swap | 107.405 ops/us | 80.000 B/op | 763 |
-| 64-bit Bitboard transition | 706.134 ops/us | 0.000001 B/op | 0 |
+| Conservative reference | 106,581 ops/ms | 541,549 ops/ms | 5.08x |
+| Five-fork GC profile | 107.405 ops/us | 706.134 ops/us | 6.57x |
 
-Multi-fork throughput speedup: 706.134 / 107.405 ≈ 6.57x.
-For summary reporting, this is stated as a stable 5x-plus state-transition advantage instead of a single best-case number.
+GC profile:
 
-## 5. Micro Benchmark: PDB Lookup
+| Operation | Allocation | GC count |
+|---|---:|---:|
+| `int[]` clone/swap | 80.000 B/op | 763 |
+| Packed `long` transition | 0.000001 B/op | 0 |
+
+A conservative summary is **stable 5x-plus** for this narrow microbenchmark. It does not compare Bitboard against the in-place Mutable Array solver, and it must not be substituted for the macro ablation.
+
+## 7. PDB Lookup Microbenchmark
 
 | Operation | Latency |
 |---|---:|
-| `HashMap<Long, Byte>` lookup | 184 ns/op |
-| 1D `byte[]` lookup | 77 ns/op |
+| Representative `HashMap<Long, Byte>` lookup | 184 ns/op |
+| Direct 1D `byte[]` lookup | 77 ns/op |
 
-Speedup: 184 / 77 ≈ 2.38x.
+The HashMap setup contains representative keys from the random-walk state pool rather than a full in-memory HashMap copy of the PDB. The result compares lookup overhead under the measured access pattern, not total production memory footprint. No hardware-counter result for L1/L2 cache hit rates was collected.
 
-## 6. Methodological Notes
+## 8. Correction History and Evidence Boundaries
 
-To reduce benchmark bias, the evaluation uses:
+- An early fixed-input transition benchmark reported about 11x. It was withdrawn because the input design exposed JIT artifact risks. The project does not claim assembly-level proof of a specific C2 optimization.
+- `benchmark_results/Search_results_legacy_pairwise_lc.csv` preserves results from the inadmissible pairwise Linear Conflict implementation.
+- `benchmark_results/Search_results.csv` is a later four-configuration run with corrected Linear Conflict, but its macro timer started after task submission, used millisecond resolution, and kept a fixed configuration order. Its exact timing values are legacy evidence only.
+- `benchmark_results/Search_results_v2.csv` is the current formal macro evidence.
+- Its five macro trials run in one warmed JVM. Counterbalancing and per-instance medians reduce within-process order/noise effects, but they are not cross-process fork evidence.
+- `benchmark_results/jmh_state_transition_multifork.csv` is the current five-fork GC-profile evidence.
 
-- global JIT warmup before formal measurements;
-- randomized state pool in JMH to reduce constant folding and dead-code elimination;
-- repeated trials for macro-level evaluation;
-- success-rate filtering under a 60-second timeout.
+Allocation claims are limited to the transition operation measured by JMH. The complete solver still allocates during setup and solution-path construction.
 
-An earlier benchmark showed around 11x speedup, but it was later treated as a likely fixed-input / JIT benchmark artifact risk rather than a stable solver-level result.
-After redesigning the benchmark with randomized runtime inputs, the reference speedup is around 5.08x.
-The later 5-fork GC run reported about 6.57x throughput speedup, near-zero heap allocation in the bitboard state-transition path, and 80 B/op for the `int[]` clone/swap path.
+## 9. Reproduction
 
-## 7. Interpretation
+Build and run the macro benchmark:
 
-PDB and Bitboard improve different levels of the solver.
+```bash
+mvn clean package
+java -cp target/classes benchmark.SearchBenchmarkRunner
+```
 
-- PDB reduces the number of expanded nodes by producing a stronger admissible heuristic.
-- Bitboard keeps the search tree unchanged but reduces the cost of each state transition.
-- Therefore, the final speedup comes from combining heuristic pruning with a state-transition hot path that has near-zero heap allocation in the measured JMH/GC profile.
+Useful overrides:
 
+```text
+-Dnpuzzle.benchmark.input=datasets/my_benchmark_100.txt
+-Dnpuzzle.benchmark.trials=5
+-Dnpuzzle.benchmark.timeoutSeconds=120
+-Dnpuzzle.benchmark.maxInstances=100
+-Dnpuzzle.benchmark.output=benchmark_results/Search_results_v2.csv
+```
 
-Allocation boundary: the near-zero allocation claim is limited to the state-transition hot path measured by the JMH benchmark and GC profiler. It should not be read as a claim that every component of the full IDA* solver or benchmark harness performs zero allocation.
+Run the five-fork transition profile:
 
-## PDB Lookup Benchmark Boundary
-
-The `HashMap` lookup benchmark uses representative keys sampled from the 1024-state random-walk pool, rather than a full in-memory `HashMap` representation of the entire PDB. It is intended to compare lookup overhead under controlled access patterns, not to model the full memory footprint of a production HashMap-based PDB.
+```bash
+java -jar target/benchmarks.jar StateTransitionBenchmark \
+  -wi 5 -i 10 -f 5 -tu us -prof gc \
+  -rf csv -rff benchmark_results/jmh_state_transition_multifork.csv
+```

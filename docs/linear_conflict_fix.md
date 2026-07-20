@@ -28,7 +28,7 @@ Replay validation:                    PASS
 ```
 
 The old result has been archived in `benchmark_results/Search_results_legacy_pairwise_lc.csv`.
-The regenerated result is stored in `benchmark_results/Search_results.csv`.
+The current formal result is stored in `benchmark_results/Search_results_v2.csv`; `Search_results.csv` is retained as a legacy timing run.
 
 ## 3. Double-Counting Shape
 
@@ -72,12 +72,12 @@ This implements the "minimum removals from the line" interpretation and avoids c
 
 Validation after the fix:
 
-- `mvn -q -DskipTests package` passes on JDK 19;
+- `mvn test` passes on JDK 21 with Java 19 bytecode target;
 - the exposing instance now returns depth 46 for Manhattan, Linear Conflict, and 6-6-3 PDB;
-- replay validation passes for the fixed solution path;
-- exhaustive 8-puzzle sanity check over 181,440 reachable states found no overestimate for the LIS rule;
-- the regenerated 15-puzzle macro benchmark has zero solution-length mismatches across 300 trial-instance cases;
-- PDB OOP and PDB Bitboard still produce identical generated-node and expanded-node counts.
+- replay validation passes for the fixed 46-move solution path;
+- `LinearConflictExhaustiveTest` checks all 181,440 reachable 8-Puzzle states for admissibility and every legal edge for consistency;
+- the formal 15-Puzzle benchmark has zero solution-length mismatches across 500 trial-instance groups;
+- PDB OOP, Mutable Array, and Bitboard produce identical generated and expanded node counts in all 500 groups.
 
 ## 6. Conclusion
 
