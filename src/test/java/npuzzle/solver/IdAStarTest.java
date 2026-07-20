@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Deque;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -118,5 +119,68 @@ class IdAStarTest {
         NPuzzleProblem problem = new NPuzzleProblem(customGoal, customGoal, 4);
 
         assertThrows(IllegalArgumentException.class, () -> searcher.search(problem));
+    }
+
+    @Test
+    void pdbExecutionModesRemainEquivalentAcrossDeterministicShallowStates() {
+        Random random = new Random(20260720L);
+
+        for (int caseIndex = 0; caseIndex < 50; caseIndex++) {
+            PuzzleBoard start = randomWalkBoard(random, 10 + random.nextInt(16));
+            NPuzzleProblem problem = new NPuzzleProblem(start, goal4, 4);
+
+            IdAStar oop = new IdAStar(feeder.getFrontier(EvaluationType.FULL), pdb);
+            oop.setUseGeneralPath(true);
+            Deque<Node> oopPath = oop.search(problem);
+
+            IdAStar mutableArray = new IdAStar(feeder.getFrontier(EvaluationType.FULL), pdb);
+            mutableArray.setUseMutableArrayPath(true);
+            Deque<Node> arrayPath = mutableArray.search(problem);
+
+            IdAStar bitboard = new IdAStar(feeder.getFrontier(EvaluationType.FULL), pdb);
+            Deque<Node> bitboardPath = bitboard.search(problem);
+
+            assertNotNull(oopPath);
+            assertNotNull(arrayPath);
+            assertNotNull(bitboardPath);
+            assertEquals(oopPath.size(), arrayPath.size());
+            assertEquals(oopPath.size(), bitboardPath.size());
+            assertEquals(goal4, oopPath.getLast().getState());
+            assertEquals(goal4, arrayPath.getLast().getState());
+            assertEquals(goal4, bitboardPath.getLast().getState());
+            assertEquals(oop.nodesExpanded(), mutableArray.nodesExpanded());
+            assertEquals(oop.nodesExpanded(), bitboard.nodesExpanded());
+            assertEquals(oop.nodesGenerated(), mutableArray.nodesGenerated());
+            assertEquals(oop.nodesGenerated(), bitboard.nodesGenerated());
+        }
+    }
+
+    private PuzzleBoard randomWalkBoard(Random random, int steps) {
+        int[] tiles = goal4.getPuzzleBoard();
+        int zeroPos = 15;
+        int lastMove = -1;
+        int[] offsets = {1, -1, 4, -4};
+        int[] candidates = new int[4];
+
+        for (int step = 0; step < steps; step++) {
+            int candidateCount = 0;
+            for (int direction = 0; direction < 4; direction++) {
+                if (lastMove != -1 && (lastMove ^ 1) == direction) continue;
+                if (direction == 0 && zeroPos % 4 == 3) continue;
+                if (direction == 1 && zeroPos % 4 == 0) continue;
+                if (direction == 2 && zeroPos >= 12) continue;
+                if (direction == 3 && zeroPos < 4) continue;
+                candidates[candidateCount++] = direction;
+            }
+
+            int direction = candidates[random.nextInt(candidateCount)];
+            int nextZero = zeroPos + offsets[direction];
+            tiles[zeroPos] = tiles[nextZero];
+            tiles[nextZero] = 0;
+            zeroPos = nextZero;
+            lastMove = direction;
+        }
+
+        return new PuzzleBoard(4, tiles);
     }
 }

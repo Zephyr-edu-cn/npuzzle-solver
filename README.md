@@ -79,7 +79,7 @@ The first step changes both state management and PDB-index maintenance. It is in
 ## Correctness
 
 - A solved root returns a zero-move path, and DFS compares actual board states rather than treating `h == 0` as the goal test.
-- Board construction validates dimensions and tile permutations; solvability is checked relative to the supplied goal.
+- `NPuzzleProblem` validates board dimensions and tile permutations before search; solvability is checked relative to the supplied goal.
 - Manhattan and Linear Conflict are goal-relative. The bundled PDB is specific to `[1, 2, ..., 15, 0]` and fails fast for another goal.
 - `scripts/replay_solution.py` independently validates every exported move and the final state.
 - `LinearConflictExhaustiveTest` checks admissibility and consistency over all 181,440 reachable 8-Puzzle states.

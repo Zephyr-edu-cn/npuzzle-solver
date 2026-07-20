@@ -32,4 +32,20 @@ class HeuristicPredictorTest {
 
         assertEquals(4, new LinearConflictPredictor().heuristics(rowConflict, goal3));
     }
+
+    @Test
+    void manhattanCoordinateCacheIsIsolatedBetweenBoardSizes() {
+        ManhattanPredictor predictor3 = new ManhattanPredictor();
+        PuzzleBoard oneMove3 = new PuzzleBoard(3, new int[]{1, 2, 3, 4, 5, 6, 7, 0, 8});
+        assertEquals(1, predictor3.heuristics(oneMove3, goal3));
+
+        ManhattanPredictor predictor4 = new ManhattanPredictor();
+        PuzzleBoard goal4 = new PuzzleBoard(4,
+                new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0});
+        PuzzleBoard oneMove4 = new PuzzleBoard(4,
+                new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15});
+        assertEquals(1, predictor4.heuristics(oneMove4, goal4));
+
+        assertEquals(1, predictor3.heuristics(oneMove3, goal3));
+    }
 }

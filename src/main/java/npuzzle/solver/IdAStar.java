@@ -15,7 +15,7 @@ import java.util.Deque;
 /**
  * Iterative Deepening A* (IDA*) search algorithm.
  * Provides three execution modes:
- * 1. Bitboard Mode: Zero-allocation path for 4x4 boards with PDB.
+ * 1. Bitboard Mode: Packed recursive hot path for 4x4 boards with PDB.
  * 2. Mutable Array Mode: In-place 4x4 path with incremental PDB indices.
  * 3. General Mode: Object-oriented path for arbitrary board dimensions.
  */

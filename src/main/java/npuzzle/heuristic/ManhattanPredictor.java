@@ -15,8 +15,8 @@ public class ManhattanPredictor implements Predictor {
     private int boardSize;
     private PuzzleBoard cachedGoal;
 
-    private static int[] indexToRow;
-    private static int[] indexToCol;
+    private int[] indexToRow;
+    private int[] indexToCol;
 
     @Override
     public int heuristics(State state, State goal) {

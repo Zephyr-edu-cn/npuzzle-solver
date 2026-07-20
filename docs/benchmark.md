@@ -25,6 +25,11 @@ The benchmark separates three effects in the canonical 15-Puzzle solver:
 
 The timer includes solver initialization performed inside `search()`, threshold iterations, and solution-path construction. It excludes task submission and `Future.get()` waiting before the task starts. The timeout mechanism remains outside the measured interval.
 
+Counter definitions:
+
+- generated nodes count non-goal successors admitted by the current IDA* bound and entered recursively; bound-pruned successors and an immediately matched goal are not included;
+- expanded nodes count DFS invocations across all IDA* threshold iterations, not unique board states.
+
 The dataset is repository-specific, not the official Korf 100 set. The file is fixed and hashed, but the original random seed, walk length, and selection metadata were not preserved. Results should therefore be described as a fixed self-built 100-instance benchmark.
 
 ## 3. Solver Configurations
@@ -37,13 +42,15 @@ The dataset is repository-specific, not the official Korf 100 set. The file is f
 | IDA* + PDB Mutable Array | In-place `int[]` swap/backtrack | Incremental |
 | IDA* + PDB Bitboard | Packed `long` transition | Incremental |
 
-The three PDB configurations share the same IDA* threshold logic, move order, immediate-reversal pruning, PDB tables, actual-state goal test, and node-count definitions. Mutable Array is the strong representation baseline. PDB OOP remains a generic implementation baseline rather than a pure array-vs-long comparison.
+The three PDB configurations share the same IDA* threshold logic, move order, immediate-reversal pruning, PDB tables, actual-state goal test, and node-count definitions. Mutable Array is the strong representation baseline. PDB OOP is this repository's generic defensive-copying implementation: successor evaluation includes multiple array copies and full PDB-index reconstruction. Its measured gap to the specialized paths should not be generalized to OOP designs as a category.
 
 ## 4. Results
 
 Raw data: `benchmark_results/Search_results_v2.csv`.
 
 CSV SHA-256: `B21FD0A46528204A154977E733321CE4A9615AE6364777FF8FB1FC8D33F68DAA`.
+
+Artifact commit: `cbfb99d`, which added the balanced five-configuration CSV and its runner revision. The later Manhattan cache-isolation fix does not change the benchmark's single-predictor, fixed-4x semantics or any PDB execution path; `Search_results_v2.csv` was re-audited, not regenerated.
 
 | Configuration | Complete instances | Mean of per-instance medians (ms) | Median (ms) | Mean expanded | Mean EBF |
 |---|---:|---:|---:|---:|---:|

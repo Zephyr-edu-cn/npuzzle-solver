@@ -91,9 +91,9 @@ The Maven test suite covers:
 - solved-root zero-move behavior;
 - one-move and custom-goal search;
 - PDB fail-fast behavior for noncanonical goals;
-- OOP, Mutable Array, and Bitboard PDB path/node equivalence;
+- OOP, Mutable Array, and Bitboard PDB path/node equivalence on a nontrivial case and 50 deterministic shallow random-walk states;
 - invalid board rejection and parity checks;
-- heuristic unit tests;
+- heuristic unit tests, including Manhattan cache isolation across board sizes;
 - exhaustive 8-Puzzle Linear Conflict admissibility and consistency;
 - benchmark-order counterbalancing and EBF reconstruction.
 
