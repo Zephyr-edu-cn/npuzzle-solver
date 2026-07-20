@@ -13,6 +13,31 @@ import java.util.Deque;
 public class NPuzzleProblem extends Problem {
     public NPuzzleProblem(State initialState, State goal, int size) {
         super(initialState, goal, size);
+        if (!(initialState instanceof PuzzleBoard) || !(goal instanceof PuzzleBoard)) {
+            throw new IllegalArgumentException("N-Puzzle states must be PuzzleBoard instances.");
+        }
+        validateBoard((PuzzleBoard) initialState, size, "initial");
+        validateBoard((PuzzleBoard) goal, size, "goal");
+    }
+
+    private void validateBoard(PuzzleBoard board, int expectedSize, String name) {
+        if (expectedSize <= 0 || board.getSize() != expectedSize) {
+            throw new IllegalArgumentException("Invalid " + name + " board size.");
+        }
+
+        int[] tiles = board.getPuzzleBoard();
+        int capacity = expectedSize * expectedSize;
+        if (tiles.length != capacity) {
+            throw new IllegalArgumentException("Invalid " + name + " board length.");
+        }
+
+        boolean[] seen = new boolean[capacity];
+        for (int tile : tiles) {
+            if (tile < 0 || tile >= capacity || seen[tile]) {
+                throw new IllegalArgumentException("Invalid " + name + " tile permutation.");
+            }
+            seen[tile] = true;
+        }
     }
 
     @Override

@@ -9,23 +9,30 @@ import java.util.Arrays;
  不相交模式数据库
  一次遍历计算所有 PDB 索引
  */
-public class DisjointPatternDatabase implements Predictor {
-    // 直接暴露原始 byte 数组以供极速访问
-    public byte[] db1;
-    public byte[] db2;
-    public byte[] db3;
+public final class DisjointPatternDatabase implements Predictor {
+    private static final int BOARD_SIZE = 4;
+    private static final int[][] SUBSETS = {
+            {1, 5, 6, 9, 10, 13},
+            {7, 8, 11, 12, 14, 15},
+            {2, 3, 4}
+    };
+    private static final PuzzleBoard CANONICAL_GOAL = new PuzzleBoard(BOARD_SIZE,
+            new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0});
+    private byte[] db1;
+    private byte[] db2;
+    private byte[] db3;
     // 预计算的查找表，用于替代 HashMap 或搜索
     // mapSubset[tile] = 该方块属于第几个数据库 (0, 1, 2)
     private final int[] mapSubset = new int[16];
     // mapShift[tile] = 该方块在索引中的位移量 (0, 4, 8, 12, 16, 20)
     private final int[] mapShift = new int[16];
-    public DisjointPatternDatabase() {
+    private DisjointPatternDatabase() {
         Arrays.fill(mapSubset, -1);
         Arrays.fill(mapShift, -1);
         // 必须与生成器 PatternDatabaseGenerator 中的 COMPACT_SUBSETS 完全一致！
-        setupSubset(0, new int[]{1, 5, 6, 9, 10, 13});
-        setupSubset(1, new int[]{7, 8, 11, 12, 14, 15});
-        setupSubset(2, new int[]{2, 3, 4});
+        setupSubset(0, SUBSETS[0]);
+        setupSubset(1, SUBSETS[1]);
+        setupSubset(2, SUBSETS[2]);
     }
     private void setupSubset(int subsetId, int[] tiles) {
         for (int i = 0; i < tiles.length; i++) {
@@ -37,15 +44,15 @@ public class DisjointPatternDatabase implements Predictor {
     public static DisjointPatternDatabase loadCompactDatabases() throws IOException {
         DisjointPatternDatabase db = new DisjointPatternDatabase();
         // 加载原始 byte 数组
-        db.db1 = loadRawBytes("pattern_db_15_663_1.dat");
-        db.db2 = loadRawBytes("pattern_db_15_663_2.dat");
-        db.db3 = loadRawBytes("pattern_db_15_663_3.dat");
+        db.db1 = loadRawBytes("pattern_db_15_663_1.dat", SUBSETS[0]);
+        db.db2 = loadRawBytes("pattern_db_15_663_2.dat", SUBSETS[1]);
+        db.db3 = loadRawBytes("pattern_db_15_663_3.dat", SUBSETS[2]);
 
         System.out.println("[INFO] 6-6-3 Compact Pattern Database loaded successfully (Raw Bytes)");
         return db;
     }
 
-    private static byte[] loadRawBytes(String filename) throws IOException {
+    private static byte[] loadRawBytes(String filename, int[] expectedSubset) throws IOException {
         // 【优化】通过当前类的 ClassLoader 加载资源，支持打成 JAR 包后运行
         // 假设 .dat 文件放在了项目的 resources 根目录下
         InputStream is = DisjointPatternDatabase.class.getResourceAsStream("/" + filename);
@@ -60,14 +67,30 @@ public class DisjointPatternDatabase implements Predictor {
         }
 
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(is))) {
-            dis.readInt(); // size
+            int boardSize = dis.readInt();
             int subsetSize = dis.readInt();
-            for (int i = 0; i < subsetSize; i++) dis.readInt();
+            if (boardSize != BOARD_SIZE || subsetSize != expectedSubset.length) {
+                throw new IOException("Pattern DB header mismatch: " + filename);
+            }
+
+            int[] subset = new int[subsetSize];
+            for (int i = 0; i < subsetSize; i++) subset[i] = dis.readInt();
             int stateCount = dis.readInt();
+            if (!Arrays.equals(subset, expectedSubset)) {
+                throw new IOException("Pattern DB subset mismatch: " + filename);
+            }
+            int expectedStateCount = 1;
+            for (int i = 0; i < subsetSize; i++) expectedStateCount *= BOARD_SIZE * BOARD_SIZE - i;
+            if (stateCount != expectedStateCount) {
+                throw new IOException("Pattern DB state count mismatch: " + filename);
+            }
 
             int dbSize = 1 << (subsetSize * 4);
             byte[] data = new byte[dbSize];
             dis.readFully(data);
+            if (dis.read() != -1) {
+                throw new IOException("Unexpected trailing data in pattern DB: " + filename);
+            }
             return data;
         }
     }
@@ -105,23 +128,49 @@ public class DisjointPatternDatabase implements Predictor {
 
     @Override
     public int heuristics(State state, State goal) {
-    // 兼容接口，给普通 IDA* 用
-        if (state instanceof PuzzleBoard) {
-            return heuristicsRaw(((PuzzleBoard) state).getPuzzleBoard());
+        if (!(state instanceof PuzzleBoard)) {
+            throw new IllegalArgumentException("Pattern database requires a PuzzleBoard state.");
         }
-        return 0;
+        if (!supportsGoal(goal)) {
+            throw new IllegalArgumentException("The 6-6-3 pattern database supports only the canonical 4x4 goal [1..15, 0].");
+        }
+        return heuristicsRaw(((PuzzleBoard) state).getPuzzleBoard());
     }
+    public boolean supportsGoal(State goal) {
+        return CANONICAL_GOAL.equals(goal);
+    }
+
     public int[] getMapSubset() {
         return mapSubset;
     }
     public int[] getMapShift() {
         return mapShift;
     }
-    @Override public boolean supportsEncoding() { return true; }
-    @Override public long encodeState(State state, State goal) { return 0; }
+    @Override
+    public boolean supportsEncoding() { return true; }
+
+    @Override
+    public long encodeState(State state, State goal) {
+        if (!(state instanceof PuzzleBoard)) {
+            throw new IllegalArgumentException("Pattern database requires a PuzzleBoard state.");
+        }
+        if (!supportsGoal(goal)) {
+            throw new IllegalArgumentException("The 6-6-3 pattern database supports only the canonical 4x4 goal [1..15, 0].");
+        }
+
+        long encoded = 0;
+        int[] tiles = ((PuzzleBoard) state).getPuzzleBoard();
+        for (int pos = 0; pos < tiles.length; pos++) {
+            int tile = tiles[pos];
+            if (tile == 0) continue;
+            int subset = mapSubset[tile];
+            int shift = mapShift[tile] + subset * 24;
+            encoded |= (long) pos << shift;
+        }
+        return encoded;
+    }
     /**
-     * Provides read-only access to the pattern database arrays.
-     * Note: Access is restricted to the solver package for performance.
+     * Raw hot-path access. Callers must treat the returned arrays as read-only.
      */
     public byte[] getDb1() { return db1; }
     public byte[] getDb2() { return db2; }

@@ -36,6 +36,19 @@ class NPuzzleProblemTest {
     }
 
     @Test
+    void rejectsInvalidTilePermutation() {
+        PuzzleBoard duplicateTile = new PuzzleBoard(3, new int[]{1, 2, 3, 4, 5, 6, 7, 7, 0});
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new NPuzzleProblem(duplicateTile, goal3, 3));
+    }
+
+    @Test
+    void rejectsMismatchedDeclaredSize() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new NPuzzleProblem(goal3, goal3, 4));
+    }
+    @Test
     void stepCostIsUnitCost() {
         NPuzzleProblem problem = new NPuzzleProblem(goal3, goal3, 3);
 

@@ -63,8 +63,8 @@ public class PatternDatabase implements Predictor {
         }
 
         if (encoding < 0 || encoding >= costDb.length) return 0;
-        int cost = costDb[encoding];
-        return (cost == -1) ? 0 : cost;
+        byte cost = costDb[encoding];
+        return (cost == -1) ? 0 : cost & 0xFF;
     }
 
     public static int encodeStateUnifiedInt(PuzzleBoard board, int[] subsetTiles) {
@@ -86,7 +86,12 @@ public class PatternDatabase implements Predictor {
     public boolean supportsEncoding() { return true; }
 
     @Override
-    public long encodeState(State state, State goal) { return 0; }
+    public long encodeState(State state, State goal) {
+        if (!(state instanceof PuzzleBoard)) {
+            throw new IllegalArgumentException("Pattern database requires a PuzzleBoard state.");
+        }
+        return encodeStateUnifiedInt((PuzzleBoard) state, subsetTiles);
+    }
 
     public int size() { return stateCount; }
 }

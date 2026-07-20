@@ -9,13 +9,15 @@ import npuzzle.model.PuzzleAction;
 import npuzzle.model.PuzzleBoard;
 import npuzzle.solver.database.DisjointPatternDatabase;
 
+import java.util.Arrays;
 import java.util.Deque;
 
 /**
  * Iterative Deepening A* (IDA*) search algorithm.
- * Provides two execution modes:
+ * Provides three execution modes:
  * 1. Bitboard Mode: Zero-allocation path for 4x4 boards with PDB.
- * 2. General Mode: Object-oriented path for arbitrary board dimensions.
+ * 2. Mutable Array Mode: In-place 4x4 path with incremental PDB indices.
+ * 3. General Mode: Object-oriented path for arbitrary board dimensions.
  */
 public class IdAStar extends AbstractSearcher {
     private DisjointPatternDatabase pdb;
@@ -25,6 +27,8 @@ public class IdAStar extends AbstractSearcher {
     private byte[] solutionPath;
     private int solutionLength;
     private boolean useGeneralPath = false;
+    private boolean useMutableArrayPath = false;
+    private long goalBitBoard;
 
     private static final PuzzleAction[] ACTIONS = {
             PuzzleAction.RIGHT, PuzzleAction.LEFT, PuzzleAction.DOWN, PuzzleAction.UP
@@ -45,20 +49,35 @@ public class IdAStar extends AbstractSearcher {
         this.useGeneralPath = useGeneralPath;
     }
 
+    public void setUseMutableArrayPath(boolean useMutableArrayPath) {
+        this.useMutableArrayPath = useMutableArrayPath;
+    }
+
     @Override
     public Deque<Node> search(Problem problem) {
-        if (!problem.solvable()) return null;
-
         nodesExpanded = 0;
         nodesGenerated = 0;
         found = false;
+        solutionLength = 0;
 
-        PuzzleBoard root = (PuzzleBoard) problem.root(predictor).getState();
+        if (pdb != null && !pdb.supportsGoal(problem.getGoal())) {
+            throw new IllegalArgumentException("The 6-6-3 pattern database supports only the canonical 4x4 goal [1..15, 0].");
+        }
+        if (!problem.solvable()) return null;
+
+        PuzzleBoard root = (PuzzleBoard) problem.root().getState();
         this.boardSize = root.getSize();
         this.moveOffsets = new int[]{1, -1, boardSize, -boardSize};
         this.solutionPath = new byte[128]; // Max depth buffer
 
+        if (problem.goal(root)) {
+            return reconstructPath(root);
+        }
+
         if (pdb != null && boardSize == 4 && !useGeneralPath) {
+            if (useMutableArrayPath) {
+                return searchMutableArrayPath(root, problem.getGoal());
+            }
             return searchBitboardPath(root, problem.getGoal());
         } else {
             return searchGeneralPath(root, problem.getGoal());
@@ -68,8 +87,10 @@ public class IdAStar extends AbstractSearcher {
     // --- Bitboard Mode (4x4, PDB optimized) ---
     private Deque<Node> searchBitboardPath(PuzzleBoard start, core.problem.State goal) {
         int[] tiles = start.getPuzzleBoard();
+        int[] goalTiles = ((PuzzleBoard) goal).getPuzzleBoard();
         int zeroPos = start.getZeroPos();
         long bitBoard = 0;
+        goalBitBoard = 0;
         int idx1 = 0, idx2 = 0, idx3 = 0;
 
         int[] mapSubset = pdb.getMapSubset();
@@ -77,6 +98,7 @@ public class IdAStar extends AbstractSearcher {
 
         for (int i = 0; i < 16; i++) {
             bitBoard |= ((long) tiles[i]) << (i << 2);
+            goalBitBoard |= ((long) goalTiles[i]) << (i << 2);
             if (tiles[i] != 0 && mapSubset[tiles[i]] != -1) {
                 int s = mapSubset[tiles[i]], shift = mapShift[tiles[i]];
                 if (s == 0) idx1 |= i << shift;
@@ -86,8 +108,10 @@ public class IdAStar extends AbstractSearcher {
         }
 
         int bound = (pdb.getDb1()[idx1] & 0xFF) + (pdb.getDb2()[idx2] & 0xFF) + (pdb.getDb3()[idx3] & 0xFF);
-        while (!found && bound < 100) {
-            bound = dfsBitboard(0, bound, zeroPos, -1, idx1, idx2, idx3, bitBoard, mapSubset, mapShift);
+        while (!found) {
+            int nextBound = dfsBitboard(0, bound, zeroPos, -1, idx1, idx2, idx3, bitBoard, mapSubset, mapShift);
+            if (nextBound == Integer.MAX_VALUE) break;
+            bound = nextBound;
         }
         return found ? reconstructPath(start) : null;
     }
@@ -115,12 +139,92 @@ public class IdAStar extends AbstractSearcher {
             int h = (pdb.getDb1()[ni1] & 0xFF) + (pdb.getDb2()[ni2] & 0xFF) + (pdb.getDb3()[ni3] & 0xFF);
             int f = g + 1 + h;
             if (f > bound) { minExceed = Math.min(minExceed, f); continue; }
-            if (h == 0) { found = true; solutionPath[g] = (byte) dir; solutionLength = g + 1; return -1; }
+            long nextBoard = (board & ~(0xFL << (nextZero << 2))) | ((long) movedTile << (zeroPos << 2));
+            if (nextBoard == goalBitBoard) { found = true; saveMove(g, dir); solutionLength = g + 1; return -1; }
 
-            solutionPath[g] = (byte) dir;
+            saveMove(g, dir);
             nodesGenerated++;
             int res = dfsBitboard(g + 1, bound, nextZero, dir, ni1, ni2, ni3,
-                    (board & ~(0xFL << (nextZero << 2))) | ((long) movedTile << (zeroPos << 2)), mSub, mSh);
+                    nextBoard, mSub, mSh);
+            if (found) return -1;
+            minExceed = Math.min(minExceed, res);
+        }
+        return minExceed;
+    }
+
+    // --- Mutable Array Mode (4x4, PDB optimized) ---
+    private Deque<Node> searchMutableArrayPath(PuzzleBoard start, core.problem.State goal) {
+        int[] board = start.getPuzzleBoard();
+        int[] goalTiles = ((PuzzleBoard) goal).getPuzzleBoard();
+        int zeroPos = start.getZeroPos();
+        int idx1 = 0, idx2 = 0, idx3 = 0;
+
+        int[] mapSubset = pdb.getMapSubset();
+        int[] mapShift = pdb.getMapShift();
+
+        for (int i = 0; i < 16; i++) {
+            int tile = board[i];
+            if (tile != 0 && mapSubset[tile] != -1) {
+                int s = mapSubset[tile], shift = mapShift[tile];
+                if (s == 0) idx1 |= i << shift;
+                else if (s == 1) idx2 |= i << shift;
+                else idx3 |= i << shift;
+            }
+        }
+
+        int bound = (pdb.getDb1()[idx1] & 0xFF) + (pdb.getDb2()[idx2] & 0xFF) + (pdb.getDb3()[idx3] & 0xFF);
+        while (!found) {
+            int nextBound = dfsMutableArray(0, bound, zeroPos, -1, idx1, idx2, idx3,
+                    board, goalTiles, mapSubset, mapShift);
+            if (nextBound == Integer.MAX_VALUE) break;
+            bound = nextBound;
+        }
+        return found ? reconstructPath(start) : null;
+    }
+
+    private int dfsMutableArray(int g, int bound, int zeroPos, int lastMove,
+                                int i1, int i2, int i3, int[] board, int[] goalTiles,
+                                int[] mSub, int[] mSh) {
+        if (Thread.currentThread().isInterrupted()) return Integer.MAX_VALUE;
+        nodesExpanded++;
+        int minExceed = Integer.MAX_VALUE;
+
+        for (int dir = 0; dir < 4; dir++) {
+            if (lastMove != -1 && (lastMove ^ 1) == dir) continue;
+            if (dir == 0 && (zeroPos & 3) == 3) continue;
+            if (dir == 1 && (zeroPos & 3) == 0) continue;
+            if (dir == 2 && zeroPos > 11) continue;
+            if (dir == 3 && zeroPos < 4) continue;
+
+            int nextZero = zeroPos + moveOffsets[dir];
+            int movedTile = board[nextZero];
+
+            int ni1 = i1, ni2 = i2, ni3 = i3;
+            int s = mSub[movedTile], sh = mSh[movedTile], diff = (nextZero << sh) ^ (zeroPos << sh);
+            if (s == 0) ni1 ^= diff; else if (s == 1) ni2 ^= diff; else ni3 ^= diff;
+
+            int h = (pdb.getDb1()[ni1] & 0xFF) + (pdb.getDb2()[ni2] & 0xFF) + (pdb.getDb3()[ni3] & 0xFF);
+            int f = g + 1 + h;
+            if (f > bound) { minExceed = Math.min(minExceed, f); continue; }
+
+            board[zeroPos] = movedTile;
+            board[nextZero] = 0;
+            if (Arrays.equals(board, goalTiles)) {
+                found = true;
+                saveMove(g, dir);
+                solutionLength = g + 1;
+                board[nextZero] = movedTile;
+                board[zeroPos] = 0;
+                return -1;
+            }
+
+            saveMove(g, dir);
+            nodesGenerated++;
+            int res = dfsMutableArray(g + 1, bound, nextZero, dir, ni1, ni2, ni3,
+                    board, goalTiles, mSub, mSh);
+            board[nextZero] = movedTile;
+            board[zeroPos] = 0;
+
             if (found) return -1;
             minExceed = Math.min(minExceed, res);
         }
@@ -130,8 +234,10 @@ public class IdAStar extends AbstractSearcher {
     // --- General Mode (OO-based) ---
     private Deque<Node> searchGeneralPath(PuzzleBoard start, core.problem.State goal) {
         int bound = predictor.heuristics(start, goal);
-        while (!found && bound < 100) {
-            bound = dfsGeneral(0, bound, start, -1, goal);
+        while (!found) {
+            int nextBound = dfsGeneral(0, bound, start, -1, goal);
+            if (nextBound == Integer.MAX_VALUE) break;
+            bound = nextBound;
         }
         return found ? reconstructPath(start) : null;
     }
@@ -158,15 +264,22 @@ public class IdAStar extends AbstractSearcher {
             int f = g + 1 + h;
 
             if (f > bound) { minExceed = Math.min(minExceed, f); continue; }
-            if (h == 0) { found = true; solutionPath[g] = (byte) dir; solutionLength = g + 1; return -1; }
+            if (nextBoard.equals(goal)) { found = true; saveMove(g, dir); solutionLength = g + 1; return -1; }
 
-            solutionPath[g] = (byte) dir;
+            saveMove(g, dir);
             nodesGenerated++;
             int res = dfsGeneral(g + 1, bound, nextBoard, dir, goal);
             if (found) return -1;
             minExceed = Math.min(minExceed, res);
         }
         return minExceed;
+    }
+
+    private void saveMove(int depth, int direction) {
+        if (depth == solutionPath.length) {
+            solutionPath = Arrays.copyOf(solutionPath, solutionPath.length * 2);
+        }
+        solutionPath[depth] = (byte) direction;
     }
 
     /**
