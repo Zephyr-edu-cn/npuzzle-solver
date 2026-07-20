@@ -58,13 +58,13 @@ The current implementation processes each row and column independently:
 
 ## 6. Multi-Implementation Cross-Checks
 
-The current formal CSV contains 5 trials x 100 instances x 5 configurations:
+The current benchmark CSV contains 5 trials x 100 instances x 5 configurations:
 
 - all 2,500 rows are `Solved`;
 - all five configurations have the same solution depth in each of 500 trial-instance groups;
 - PDB OOP, PDB Mutable Array, and PDB Bitboard have identical generated and expanded node counts in every group.
 
-The three PDB paths are independent searches. Node equality confirms that state updates and incremental indices preserve the same search tree; it is not produced by sharing counters.
+The three PDB paths run as separate searches. Node equality confirms that state updates and incremental indices preserve the same search tree; it is not produced by sharing counters. Because the paths share problem modeling and IDA* threshold semantics, this cross-check is supporting evidence rather than an independent optimality oracle.
 
 ## 7. Independent Replay
 

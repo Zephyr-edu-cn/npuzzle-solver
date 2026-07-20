@@ -5,10 +5,10 @@
 The benchmark separates three effects in the canonical 15-Puzzle solver:
 
 1. How much do stronger admissible heuristics reduce the search tree?
-2. How much does replacing the generic immutable OOP path with an allocation-free, incremental-index path reduce solver time?
+2. How much does replacing the generic immutable OOP path with an in-place, incremental-index path reduce solver time?
 3. After those changes are controlled, how much additional benefit comes from a packed 64-bit representation over an in-place `int[]`?
 
-## 2. Formal Macro Protocol
+## 2. Macro Benchmark Protocol
 
 - Runtime: JetBrains Runtime OpenJDK 21.0.10; project bytecode target is Java 19.
 - Operating system: Windows NT 10.0.26200.0.
@@ -59,7 +59,7 @@ Paired search-time speedups:
 
 | Comparison | Geometric mean | Median ratio | Interpretation |
 |---|---:|---:|---|
-| PDB OOP to Mutable Array | 4.944x | 5.173x | Removing immutable-board copies and full PDB-index reconstruction |
+| PDB OOP to Mutable Array | 4.944x | 5.173x | Combined in-place state update and incremental PDB-index maintenance |
 | Mutable Array to Bitboard | 1.218x | 1.225x | Additional packed-representation benefit under the same incremental algorithm |
 | PDB OOP to Bitboard | 6.023x | 6.386x | Combined specialized-path benefit; not a pure Bitboard attribution |
 ## 5. Independent Data Checks
@@ -90,7 +90,7 @@ GC profile:
 | `int[]` clone/swap | 80.000 B/op | 763 |
 | Packed `long` transition | 0.000001 B/op | 0 |
 
-A conservative summary is **stable 5x-plus** for this narrow microbenchmark. It does not compare Bitboard against the in-place Mutable Array solver, and it must not be substituted for the macro ablation.
+The two recorded reference ratios are **5.08x** in the conservative run and **6.57x** in the five-fork GC-profile run. Both refer only to this narrow transition microbenchmark; neither compares Bitboard against the in-place Mutable Array solver or substitutes for the macro comparison.
 
 ## 7. PDB Lookup Microbenchmark
 
@@ -106,7 +106,7 @@ The HashMap setup contains representative keys from the random-walk state pool r
 - An early fixed-input transition benchmark reported about 11x. It was withdrawn because the input design exposed JIT artifact risks. The project does not claim assembly-level proof of a specific C2 optimization.
 - `benchmark_results/Search_results_legacy_pairwise_lc.csv` preserves results from the inadmissible pairwise Linear Conflict implementation.
 - `benchmark_results/Search_results.csv` is a later four-configuration run with corrected Linear Conflict, but its macro timer started after task submission, used millisecond resolution, and kept a fixed configuration order. Its exact timing values are legacy evidence only.
-- `benchmark_results/Search_results_v2.csv` is the current formal macro evidence.
+- `benchmark_results/Search_results_v2.csv` is the current macro benchmark evidence.
 - Its five macro trials run in one warmed JVM. Counterbalancing and per-instance medians reduce within-process order/noise effects, but they are not cross-process fork evidence.
 - `benchmark_results/jmh_state_transition_multifork.csv` is the current five-fork GC-profile evidence.
 
